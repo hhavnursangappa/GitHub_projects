@@ -12,7 +12,7 @@ class Database:
                 self.conn = sqlite3.connect(f_name)
                 break
             else:
-                self.conn = sqlite3.connect('passsword.db')
+                self.conn = sqlite3.connect('password.db')
 
         self.c = self.conn.cursor()
 
