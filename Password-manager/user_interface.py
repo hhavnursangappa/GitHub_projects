@@ -11,6 +11,8 @@ def manager():
     print("1. Login to your password vault\n"
           "2. Create a password vault")
     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    # valid_choice = True
+    # while not valid_choice:
     choice = int(input("Enter what you wish to do: "))
     if choice == 1:
         m_user = str(input("Enter the master username: "))
@@ -22,6 +24,9 @@ def manager():
 
     elif choice == 2:
         create_password_vault()
+
+    else:
+        print("Invalid Choice! Please enter a valid choice")
 
 
 def create_password_vault():
@@ -38,7 +43,7 @@ def login_password_vault(m_user):
     m_pwd = db.return_master_password(m_user)
     pass_key = str(input("Enter the master passkey: "))
     attempt = 0
-    while pass_key != m_pwd[0][1]:
+    while pass_key != m_pwd:
         if attempt <= 3:
             pass_key = str(input(f"Wrong password. You have {3 - attempt} attempts left. Please try again: "))
             attempt += 1
@@ -82,7 +87,7 @@ def menu():
             web = str(input("Enter the website: "))
             username = str(input("Enter the username: "))
             password = str(input("Enter the password: "))
-            db.insert_values(web, username, password)
+            db.create_table(web, username, password)
             print(f"The password has been successfully added to the vault")
             print('\n')
 
@@ -120,7 +125,7 @@ def menu():
             print("All passwords from the vault have been successfully deleted")
             print('\n')
 
-    db.conn.close()
+    # db.conn.close()
     print("You have successfully logged out of the vault. Have a nice day ahead!")
     sys.exit()
 
