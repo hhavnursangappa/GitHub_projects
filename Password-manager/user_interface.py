@@ -5,28 +5,53 @@ db = Database()  # Instantiate the database object
 
 
 def manager():
+    choice = None
+    while choice != 4:
+        print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+        print("Welcome to your password manager.")
+        print("1. Login to your password vault\n"
+              "2. Create a password vault\n"
+              "3. Change Master Password\n"
+              "4. Exit the application")
+        print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-    print("Welcome to your password manager.")
-    print("1. Login to your password vault\n"
-          "2. Create a password vault")
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-    # valid_choice = True
-    # while not valid_choice:
-    choice = int(input("Enter what you wish to do: "))
-    if choice == 1:
-        m_user = str(input("Enter the master username: "))
-        user_exists = db.is_present_user(m_user)
-        if user_exists:
-            login_password_vault(m_user)
-        else:
+        choice = int(input("Enter what you wish to do: "))
+        if choice == 1:
+            m_user = str(input("Enter the master username: "))
+            user_exists = db.is_present_user(m_user)
+            if user_exists:
+                login_password_vault(m_user)
+            else:
+                create_password_vault()
+
+
+        elif choice == 2:
             create_password_vault()
 
-    elif choice == 2:
-        create_password_vault()
 
-    else:
-        print("Invalid Choice! Please enter a valid choice")
+        elif choice == 3:
+            while True:
+                old_m_pwd = str(input("Enter the old master password: "))
+                new_m_pwd = str(input("Enter the new master password: "))
+                conf_m_pwd = str(input("Confirm the new master password: "))
+                if conf_m_pwd == new_m_pwd:
+                    if new_m_pwd != old_m_pwd:
+                        res = db.update_master_pwd(new_m_pwd)
+                        if res:
+                            print("Password changed successfully !")
+                            break
+                        else:
+                            print("There was a problem changing the password.")
+                    else:
+                        print("The new password and the old password cannot be same")
+                else:
+                    print("The new password doesnt match the confirm password. Please check")
+
+
+        else:
+            print("Invalid Choice! Please enter a valid choice")
+    print("Goodbye! Have a nice day ahead !")
+    sys.exit()
 
 
 def create_password_vault():
@@ -71,32 +96,33 @@ def print_entries(entries):
 
 def menu():
     sel = None
-    while sel != 6:
+    while sel != 7:
         print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
         print("1. Create a new entry\n"
-              "2. View all entries\n"
+              "2. View all credentials\n"
               "3. Filter entry\n"
-              "4. Delete an existing entry\n"
-              "5. Delete all entries\n"
-              "6. Logout")
+              "4. Delete an existing credential\n"
+              "5. Delete all credentials\n"
+              "6. Update existing credentials\n"
+              "7. Logout")
         print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
         sel = int(input("Enter your selection: "))
 
         if sel == 1:
             web = str(input("Enter the website: "))
-            username = str(input("Enter the username: "))
+            username = str(input("Enter the username. Use '_' instead of whitespace: "))
             password = str(input("Enter the password: "))
-            db.create_table(web, username, password)
+            db.create_pwd_table(web, username, password)
             print(f"The password has been successfully added to the vault")
             print('\n')
 
         elif sel == 2:
-            print("The entries in the database are as follows: ")
             values = db.print_all_values()
             if len(values) == 0:
                 print("The vault is empty. Start adding some passwords\n")
             else:
+                print("The entries in the database are as follows: ")
                 print_entries(values)
             print('\n')
 
@@ -125,9 +151,17 @@ def menu():
             print("All passwords from the vault have been successfully deleted")
             print('\n')
 
-    # db.conn.close()
-    print("You have successfully logged out of the vault. Have a nice day ahead!")
-    sys.exit()
+        elif sel == 6:
+            cols = list(input("Enter the columns you wish to update. Use ', ' as separator: ").split(', '))
+            vals = list(input("Enter the new credentials in the same order as the column names. Use ', ' as separator: ").split(', '))
+            res = db.update_entries(cols, vals)
+            if res:
+                print("The credentials have been successfully updated")
+            else:
+                print("There was an error in updating the credentials!")
+
+    print("You have successfully logged out of the vault.")
+
 
 
 if __name__ == '__main__':
