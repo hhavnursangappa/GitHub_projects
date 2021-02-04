@@ -15,7 +15,12 @@ def manager():
               "4. Exit the application")
         print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
-        choice = int(input("Enter what you wish to do: "))
+        try:
+            choice = int(input("Enter what you wish to do: "))
+        except ValueError:
+            print("Invalid Choice! Please enter a valid choice\n")
+            continue
+
         if choice == 1:
             m_user = str(input("Enter the master username: "))
             user_exists = db.is_present_user(m_user)
@@ -83,12 +88,13 @@ def login_password_vault(m_user):
 
 def print_entries(entries):
     print("*************************************************************************************")
-    print("|\tWEBSITE\t|\tUSERNAME\t|\tPASSWORD\t|")
+    print("|\tSL.NO\t|\tWEBSITE\t|\tUSERNAME\t|\tPASSWORD\t|")
     for entry in entries:
         row = []
-        row.append(entry[0])
+        row.append(str(entry[0]))
         row.append(entry[1])
         row.append(entry[2])
+        row.append(entry[3])
 
         print('|\t' + '\t|\t'.join(row) + '\t|')
     print("*************************************************************************************")
@@ -113,7 +119,12 @@ def menu():
             web = str(input("Enter the website: "))
             username = str(input("Enter the username. Use '_' instead of whitespace: "))
             password = str(input("Enter the password: "))
-            db.create_pwd_table(web, username, password)
+            table_exists = db.is_table_present()
+            if table_exists:
+                sl_no = db.return_serial_number()
+            else:
+                sl_no = 1
+            db.create_pwd_table(sl_no, web, username, password)
             print(f"The password has been successfully added to the vault")
             print('\n')
 
@@ -154,7 +165,7 @@ def menu():
         elif sel == 6:
             cols = list(input("Enter the columns you wish to update. Use ', ' as separator: ").split(', '))
             vals = list(input("Enter the new credentials in the same order as the column names. Use ', ' as separator: ").split(', '))
-            res = db.update_entries(cols, vals)
+            res = db.update_credentials(cols, vals)
             if res:
                 print("The credentials have been successfully updated")
             else:
