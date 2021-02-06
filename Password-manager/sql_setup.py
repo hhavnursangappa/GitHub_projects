@@ -15,26 +15,24 @@ class Database:
                 self.filename = 'password.db'
 
 
-    def create_master_password_table(self, user, pwd):
+    def create_master_password_table(self, pwd):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        c.execute(""" SELECT name FROM sqlite_master WHERE type='table' and name='master_pwd_table' """)
-        table_list = c.fetchone()
-        if len(table_list) == 1:
-            self.insert_master_credentials(user, pwd)
+        if self.is_master_table():
+            self.insert_master_password(pwd)
         else:
-            c.execute(""" CREATE TABLE master_pwd_table (master_user text, master_password text) """)
+            c.execute(""" CREATE TABLE master_pwd_table (master_password text) """)
         conn.commit()
         conn.close()
 
 
-    def insert_master_credentials(self, user, pwd):
+    def insert_master_password(self, pwd):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        c.execute(""" INSERT INTO master_pwd_table VALUES (:user, :password) """,
-                       {'user': user, 'password': pwd})
-        # conn.commit()
-        # conn.close()
+        c.execute(""" INSERT INTO master_pwd_table VALUES (:password) """,
+                 {'password': pwd})
+        conn.commit()
+        conn.close()
         # c.close()
 
 
@@ -58,7 +56,7 @@ class Database:
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         try:
-            c.execute(""" UPDATE master_pwd_table SET master_password = REPLACE(master_password, :new_val) """, {'new_val': new_pwd})
+            c.execute(""" UPDATE master_pwd_table SET master_password = :new_val) """, {'new_val': new_pwd})
             conn.commit()
             conn.close()
             return True
@@ -66,30 +64,30 @@ class Database:
             return False
 
 
-    def is_present_user(self, user):
+    def is_present_pass(self):
         try:
             conn = sqlite3.connect(self.filename)
             c = conn.cursor()
-            c.execute(""" SELECT * FROM master_pwd_table WHERE master_user=:user """, {'user': user})
+            c.execute(""" SELECT * FROM master_pwd_table """)
             data = c.fetchall()
             conn.commit()
             conn.close()
             if len(data) == 0:
                 return False
-            elif user in data[0][0]:
+            else:
                 return True
         except sqlite3.OperationalError:
             return False
 
 
-    def return_master_password(self, user):
+    def return_master_password(self):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        c.execute(""" SELECT * FROM master_pwd_table WHERE master_user=:user """, {'user': user})
+        c.execute(""" SELECT * FROM master_pwd_table """)
         mas_pwd = c.fetchall()
         conn.commit()
         conn.close()
-        return mas_pwd[0][1]
+        return mas_pwd[0][0]
 
 
     def create_pwd_table(self, sl_no, website, username, password):
@@ -97,6 +95,8 @@ class Database:
         c = conn.cursor()
         c.execute(""" SELECT name FROM sqlite_master WHERE type='table' and name='password_manager' """)
         table_list = c.fetchall()
+        # conn.commit()
+        # conn.close()
         if len(table_list) == 1:
             self.insert_values(sl_no, website, username, password)
         else:
@@ -112,13 +112,17 @@ class Database:
         c.execute(""" INSERT INTO password_manager VALUES (:num, :web, :user, :pass) """,
                  {'num': sl_no, 'web': website, 'user': username, 'pass': password})  # SQL statement to insert entries into a table
         conn.commit()
+        conn.close()
 
 
     def return_serial_number(self):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         c.execute(""" SELECT * FROM password_manager """)
-        num = len(c.fetchall())
+        t_entries = c.fetchall()
+        num = len(t_entries)
+        conn.commit()
+        conn.close()
         return num+1
 
 
@@ -174,9 +178,9 @@ class Database:
                 c.execute(""" SELECT * FROM password_manager WHERE website=:web """, {'web': inp_arg})
             else:
                 c.execute(""" SELECT * FROM password_manager WHERE username=:user """, {'user': inp_arg})
-                conn.commit()
-                conn.close()
             values = c.fetchall()
+            conn.commit()
+            conn.close()
 
             return values
 
@@ -194,31 +198,24 @@ class Database:
     def remove_values(self, inp_arg):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        c.execute(""" SELECT * FROM password_manager """)
-        len_table = len(c.fetchall())
         if inp_arg is None:
             raise TypeError(" Please provide a field to remove ")
         else:
-            if '.com' in inp_arg:
-                c.execute(""" SELECT * FROM password_manager WHERE website=:web """, {'web': inp_arg})
-                start = c.fetchall()[0][0]
-                end = len_table
-                c.execute(""" SELECT * FROM password_manager WHERE sl_no BETWEEN :start AND :end """, {'start': start+1, 'end': end})
-                next_entries = c.fetchall()
-                # c.execute(""" DELETE FROM password_manager WHERE website=:web """, {'web': inp_arg})
-                # conn.commit()
-                for entry in next_entries:
-                    c.execute(""" REPLACE INTO password_manager (sl_no, website, username, password) VALUES (:sl_no, :new_website, :new_username, :new_password) """,
-                              {'sl_no': entry[0] - 1, 'new_website': entry[1], 'new_username': entry[2], 'new_password': entry[3]})
+            c.execute(""" SELECT * FROM password_manager """)
 
-                # for ii in range(int(sl_no)+1, len_table+1):
-                #     c.execute(""" REPLACE INTO password_manager (sl_no, website, username, password) VALUES (:sl_no, :new_sl_no) """, {'sl_no': ii, 'new_sl_no': ii-1})
+            c.execute(""" SELECT * FROM password_manager """)
+            len_table = len(c.fetchall())
 
-                # c.execute(""" DELETE FROM password_manager WHERE website=:web """, {'web': inp_arg})  # Delete passwords for the mentioned website.
-            else:
-                c.execute(""" DELETE FROM password_manager WHERE username=:user """, {'user': inp_arg})  # Delete password for the given username.
-        conn.commit()
-        conn.close()
+            c.execute(""" SELECT * FROM password_manager WHERE sl_no BETWEEN :start AND :end """,
+                      {'start': inp_arg + 1, 'end': len_table})
+            conn.commit()
+            next_entries = c.fetchall()
+            c.execute(""" DELETE FROM password_manager WHERE sl_no=:num """, {'num': inp_arg})
+            conn.commit()
+            for entry in next_entries:
+                c.execute(""" UPDATE password_manager SET sl_no = sl_no -1 WHERE sl_no = :num """, {'num': entry[0]})
+            conn.commit()
+            conn.close()
 
 
     def remove_all_values(self):
@@ -230,16 +227,59 @@ class Database:
         # c.close()
 
 
+    # CHECK FUNCTIONS
     def is_table_present(self):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         try:
             c.execute(""" SELECT name FROM sqlite_master WHERE type='table' and name='password_manager' """)
-            if len(c.fetchall()) != 0:
+            pwd_table_name = c.fetchall()
+            conn.commit()
+            conn.close()
+            if len(pwd_table_name) != 0:
                 return True
             else:
                 return False
         except sqlite3.OperationalError:
             return False
+
+
+    def is_master_table(self):
+        conn = sqlite3.connect(self.filename)
+        c = conn.cursor()
+        try:
+            c.execute(""" SELECT name FROM sqlite_master WHERE type='table' and name='master_pwd_table' """)
+            # c.execute(""" SELECT * FROM master_pwd_table """)
+            table_name = c.fetchall()
+            print(table_name)
+            conn.commit()
+            conn.close()
+            if len(table_name) != 0:
+                return True
+            else:
+                return False
+        except sqlite3.OperationalError:
+            return False
+
+
+    def is_master_data(self):
+        if self.is_master_table():
+            conn = sqlite3.connect(self.filename)
+            c = conn.cursor()
+            c.execute(""" SELECT * FROM master_pwd_table """)
+            table_data = c.fetchall()
+            print(table_data)
+            conn.commit()
+            conn.close()
+            if len(table_data) != 0:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+
+
+
 # if __name__ == '__main__':
     # connect_database()
