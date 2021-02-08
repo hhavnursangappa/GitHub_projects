@@ -1,5 +1,7 @@
 import tkinter as tk
+from tkinter import ttk
 import sys
+import Pmw
 from tkinter import simpledialog
 from tkinter import messagebox
 from sql_setup import Database
@@ -34,6 +36,7 @@ class UserInterface:
         self.login_win.title("Vault Login")
         self.login_win.grab_set()
 
+
         frame = tk.Frame(self.login_win)
         frame.pack(side='top')
 
@@ -46,8 +49,14 @@ class UserInterface:
         login_btn = tk.Button(frame, text="Login", width=10, command=self.login_password_vault)
         login_btn.pack(side='top', padx=5, pady=5)
 
+        self.login_win.bind('<Return>', self.login_password_vault)
 
-    def login_password_vault(self):
+
+    # def hit_enter_to_login(self, event):
+    #     self.login_password_vault()
+
+
+    def login_password_vault(self, event):
         m_data = db.is_master_data()
         if m_data:
             m_pwd = db.return_master_password()
@@ -63,7 +72,7 @@ class UserInterface:
                     sys.exit()
 
             messagebox.showinfo("Login Successfull", "You have successfully logged in")
-            # print('\n')
+            self.root.withdraw()
             self.password_table()
 
         else:
@@ -105,7 +114,7 @@ class UserInterface:
         self.pass_table.title("Password Manager")
 
         top_frame = tk.Frame(self.pass_table)
-        top_frame.pack(side='top')
+        top_frame.pack(side='top', fill='both')
 
         bottom_frame = tk.Frame(self.pass_table)
         bottom_frame.pack(side='top')
@@ -117,6 +126,30 @@ class UserInterface:
         bottom_right_frame.pack(side='left')
 
         # Create the table here
+        Pmw.initialise(self.root)
+
+        self.sf = Pmw.ScrolledFrame(top_frame, labelpos='n', label_text='Scrolled Frame', usehullsize=1, hull_width=400, hull_height=220,)
+        self.sf.pack(side='top', fill='both')
+
+        cols = ('Sl.No.', 'Website', 'Username', 'Password')
+        password_table = ttk.Treeview(master=self.sf.interior(), columns=cols, show='headings')  # Use ScrolledWindow.interior() as the master for any children widgets
+        password_table.column("Sl.No.", width=10)
+        # tree.column("2", width=50)
+        # tree.column("3", width=50)
+        # w = self.sf.frame.winfo_width()
+
+        for col in cols:
+            password_table.heading(col, text=col)
+
+        values = db.print_all_values()
+        for val in values:
+            password_table.insert("", "end", values=(val[0], val[1], val[2], val[3]))
+
+        password_table.grid(row=0, column=0, sticky='news')
+
+        w1 = password_table.winfo_width()
+        # self.sf.clipper.configure(width=w1)
+        # self.sf.xview('moveto', 1)
 
         add_entry_btn = tk.Button(bottom_left_frame, text="Add credentials", width=15, command=self.add_credentials_window)
         add_entry_btn.pack(side='top', padx=5, pady=5)
@@ -156,7 +189,7 @@ class UserInterface:
         self.pass_field = tk.Entry(cred_win)
         self.pass_field.grid(row=2, column=1, padx=5, pady=5, sticky='ew')
 
-        add_btn = tk.Button(cred_win, text='Add', comamnd=self.add_credentials)
+        add_btn = tk.Button(cred_win, text='Add', command=self.add_credentials)
         add_btn.grid(row=3, column=0, padx=5, pady=5, sticky='ew')
 
 
