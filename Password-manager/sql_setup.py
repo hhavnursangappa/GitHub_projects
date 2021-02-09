@@ -163,7 +163,7 @@ class Database:
 
 
     # Function to print a all user credentials to the terminal
-    def print_all_values(self):
+    def return_all_values(self):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         c.execute(""" SELECT * FROM password_manager """)  # SQL command to select all entries in a table
