@@ -12,6 +12,7 @@ class UserInterface:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Hello User")
+        self.root.protocol("WM_DELETE_WINDOW", self.close_all_windows)
 
         top_frame = tk.Frame(self.root)
         top_frame.pack(side='top')
@@ -36,7 +37,6 @@ class UserInterface:
         self.login_win.title("Vault Login")
         self.login_win.grab_set()
 
-
         frame = tk.Frame(self.login_win)
         frame.pack(side='top')
 
@@ -52,10 +52,6 @@ class UserInterface:
         self.login_win.bind('<Return>', self.login_password_vault)
 
 
-    # def hit_enter_to_login(self, event):
-    #     self.login_password_vault()
-
-
     def login_password_vault(self, event):
         m_data = db.is_master_data()
         if m_data:
@@ -68,12 +64,12 @@ class UserInterface:
                     attempt += 1
                     self.login_win.wait_window()
                 else:
-                    print("You have exhausted your attempts. Try again after 24 hrs")
-                    sys.exit()
+                    messagebox.showinfo("Login Failed", "You have exhausted your attempts. Try again after 24 hrs")
+                    self.close_all_windows()
 
             messagebox.showinfo("Login Successfull", "You have successfully logged in")
             self.root.withdraw()
-            self.password_table()
+            self.show_password_table()
 
         else:
             messagebox.showwarning("Login Failed", "You have not yet created a vault. Create one by entering the master password")
@@ -103,10 +99,10 @@ class UserInterface:
         db.create_master_password_table(self.pass_field.get())
         messagebox.showinfo("Vault creation successfull", "A Vault has been successfully created for you. Now you can do the following: ")
         self.pass_win.destroy()
-        self.password_table()
+        self.show_password_table()
 
 
-    def password_table(self):
+    def show_password_table(self):
         self.root.withdraw()
         self.login_win.destroy()
 
@@ -125,32 +121,27 @@ class UserInterface:
         bottom_right_frame = tk.Frame(self.pass_table)
         bottom_right_frame.pack(side='left')
 
-        # Create the table here
-        Pmw.initialise(self.root)
+        # Create scrollbar
+        pass_table_scroll = tk.Scrollbar(master=top_frame)
+        pass_table_scroll.pack(side='right', fill='y')
 
-        self.sf = Pmw.ScrolledFrame(top_frame, labelpos='n', label_text='Scrolled Frame', usehullsize=1, hull_width=400, hull_height=220,)
-        self.sf.pack(side='top', fill='both')
-
+        # Create tree view
         cols = ('Sl.No.', 'Website', 'Username', 'Password')
-        password_table = ttk.Treeview(master=self.sf.interior(), columns=cols, show='headings')  # Use ScrolledWindow.interior() as the master for any children widgets
-        password_table.column("Sl.No.", width=10)
-        # tree.column("2", width=50)
-        # tree.column("3", width=50)
-        # w = self.sf.frame.winfo_width()
+        self.password_table = ttk.Treeview(master=top_frame, columns=cols, padding=5, show='headings', selectmode='browse',
+                                           yscrollcommand=pass_table_scroll.set, height=5)
+        self.password_table.pack()
+        self.password_table.column("Sl.No.", width=10)
 
+        # Insert values in to the tree view
         for col in cols:
-            password_table.heading(col, text=col)
+            self.password_table.heading(col, text=col)
 
-        values = db.print_all_values()
-        for val in values:
-            password_table.insert("", "end", values=(val[0], val[1], val[2], val[3]))
+        self.update_password_table()
 
-        password_table.grid(row=0, column=0, sticky='news')
+        # Configure the scroll bar
+        pass_table_scroll.configure(command=self.password_table.yview)
 
-        w1 = password_table.winfo_width()
-        # self.sf.clipper.configure(width=w1)
-        # self.sf.xview('moveto', 1)
-
+        # Add the buttons
         add_entry_btn = tk.Button(bottom_left_frame, text="Add credentials", width=15, command=self.add_credentials_window)
         add_entry_btn.pack(side='top', padx=5, pady=5)
 
@@ -167,33 +158,41 @@ class UserInterface:
         logout_btn.pack(side='top', padx=5, pady=5)
 
 
-    def add_credentials_window(self):
-        cred_win = tk.Toplevel()
-        cred_win.title = 'Add a new entry'
+    def update_password_table(self):
+        values = db.return_all_values()
+        for val in values:
+            self.password_table.insert("", "end", values=(val[0], val[1], val[2], val[3]))
 
-        web_label = tk.Label(cred_win, text="Enter the website")
+
+    def add_credentials_window(self):
+        self.cred_win = tk.Toplevel()
+        self.cred_win.title = 'Add a new entry'
+
+        web_label = tk.Label(self.cred_win, text="Enter the website")
         web_label.grid(row=0, column=0, padx=5, pady=5, sticky='e')
 
-        self.web_field = tk.Entry(cred_win)
+        self.web_field = tk.Entry(self.cred_win)
         self.web_field.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
 
-        user_label = tk.Label(cred_win, text="Enter the username")
+        user_label = tk.Label(self.cred_win, text="Enter the username")
         user_label.grid(row=1, column=0, padx=5, pady=5, sticky='e')
 
-        self.user_field = tk.Entry(cred_win)
+        self.user_field = tk.Entry(self.cred_win)
         self.user_field.grid(row=1, column=1, padx=5, pady=5, sticky='ew')
 
-        pass_label = tk.Label(cred_win, text="Enter the passsword")
+        pass_label = tk.Label(self.cred_win, text="Enter the passsword")  # TODO: Insert the parameter show='*'
         pass_label.grid(row=2, column=0, padx=5, pady=5, sticky='e')
 
-        self.pass_field = tk.Entry(cred_win)
+        self.pass_field = tk.Entry(self.cred_win)
         self.pass_field.grid(row=2, column=1, padx=5, pady=5, sticky='ew')
 
-        add_btn = tk.Button(cred_win, text='Add', command=self.add_credentials)
+        add_btn = tk.Button(self.cred_win, text='Add', command=self.add_credentials)
         add_btn.grid(row=3, column=0, padx=5, pady=5, sticky='ew')
 
 
     def add_credentials(self):
+        self.cred_win.withdraw()
+
         web = str(self.web_field.get())
         username = str(self.user_field.get())
         password = str(self.pass_field.get())
@@ -203,17 +202,20 @@ class UserInterface:
             sl_no = db.return_serial_number()
         else:
             sl_no = 1
+
         db.create_pwd_table(sl_no, web, username, password)
-        messagebox.showinfo("The password has been successfully added to the vault")
+        values = db.print_all_values()
+        val_to_add = values[-1]
+        self.password_table.insert("", "end", values=(val_to_add[0], val_to_add[1], val_to_add[2], val_to_add[3]))
+        messagebox.showinfo("Added Credentials", "The password has been successfully added to the vault")
         self.pass_table.wait_window()
 
 
     def delete_credentials_window(self):
-        # delete_cred_win = tk.Toplevel()
-        # delete_cred_win.title = "Delete existing credential"
         ans = messagebox.askyesnocancel("Delete existing credential", "Are you sure you want to delete these credentials from the vault?")
         if ans == 'yes':
             db.remove_values()
+            self.update_password_table()
         else:
             self.pass_table.wait_window()
 
@@ -222,6 +224,7 @@ class UserInterface:
         ans = messagebox.askyesnocancel("Delete all credentials", "Are you sure you want to delete all credentials and clear the vault?")
         if ans == 'yes':
             db.remove_all_values()
+            self.update_password_table()
         else:
             self.pass_table.wait_window()
 
@@ -281,13 +284,15 @@ class UserInterface:
     def logout(self):
         ans = messagebox.askyesnocancel('Logout', 'Are you sure you want to log out of the vault')
         if ans == 'yes':
-            # Insert WM_PROTOCOL to destroy all windows
             self.pass_table.destroy()
             messagebox.showinfo('Logout', 'Goodbye! Have a nice day ahead')
+            self.close_all_windows()
         else:
             self.pass_table.wait_window()
 
 
+    def close_all_windows(self):
+        self.root.destroy_all_windows()
 
 
 
