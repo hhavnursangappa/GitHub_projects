@@ -67,8 +67,9 @@ class UserInterface:
                     messagebox.showinfo("Login Failed", "You have exhausted your attempts. Try again after 24 hrs")
                     self.close_all_windows()
 
-            messagebox.showinfo("Login Successfull", "You have successfully logged in")
+            self.login_win.withdraw()
             self.root.withdraw()
+            messagebox.showinfo("Login Successfull", "You have successfully logged in")
             self.show_password_table()
 
         else:
@@ -136,7 +137,13 @@ class UserInterface:
         for col in cols:
             self.password_table.heading(col, text=col)
 
-        self.update_password_table()
+        # Return all values
+        # loop through values
+        # create update and copy buttons
+        # convert each value into a list and add the created buttons
+        # call the update password table with these values
+
+        self.update_password_table(values)
 
         # Configure the scroll bar
         pass_table_scroll.configure(command=self.password_table.yview)
@@ -158,10 +165,15 @@ class UserInterface:
         logout_btn.pack(side='top', padx=5, pady=5)
 
 
-    def update_password_table(self):
-        values = db.return_all_values()
-        for val in values:
-            self.password_table.insert("", "end", values=(val[0], val[1], val[2], val[3]))
+    def update_password_table(self, values=None):
+        if values is None:
+            values_to_insert = db.return_all_values()
+            for val in values_to_insert:
+                    self.password_table.insert("", "end", values=(val[0], val[1], val[2], val[3], val[4], val[5]))
+        else:
+            values_to_insert = values
+            for val in values_to_insert:
+                    self.password_table.insert("", "end", values=(val[0], val[1], val[2], val[3]))
 
 
     def add_credentials_window(self):
@@ -213,7 +225,7 @@ class UserInterface:
 
     def delete_credentials_window(self):
         ans = messagebox.askyesnocancel("Delete existing credential", "Are you sure you want to delete these credentials from the vault?")
-        if ans == 'yes':
+        if ans:
             db.remove_values()
             self.update_password_table()
         else:
@@ -222,7 +234,7 @@ class UserInterface:
 
     def delete_all_credentials(self):
         ans = messagebox.askyesnocancel("Delete all credentials", "Are you sure you want to delete all credentials and clear the vault?")
-        if ans == 'yes':
+        if ans:
             db.remove_all_values()
             self.update_password_table()
         else:
@@ -283,7 +295,7 @@ class UserInterface:
 
     def logout(self):
         ans = messagebox.askyesnocancel('Logout', 'Are you sure you want to log out of the vault')
-        if ans == 'yes':
+        if ans:
             self.pass_table.destroy()
             messagebox.showinfo('Logout', 'Goodbye! Have a nice day ahead')
             self.close_all_windows()
@@ -292,7 +304,9 @@ class UserInterface:
 
 
     def close_all_windows(self):
-        self.root.destroy_all_windows()
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Toplevel):
+                widget.destroy()
 
 
 
