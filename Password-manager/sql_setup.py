@@ -102,46 +102,53 @@ class Database:
 
 
     # Function to update the username in the password manager table
-    def update_username(self, sl_num, new_user):
-        conn = sqlite3.connect(self.filename)
-        c = conn.cursor()
-        c.execute(""" UPDATE password_manager SET username = :val WHERE sl_no = :num """, {'val': new_user, 'num': sl_num})
-        conn.commit()
-        conn.close()
-        return True
+    # def update_username(self, sl_num, new_user):
+    #     conn = sqlite3.connect(self.filename)
+    #     c = conn.cursor()
+    #     c.execute(""" UPDATE password_manager SET username = :val WHERE sl_no = :num """, {'val': new_user, 'num': sl_num})
+    #     conn.commit()
+    #     conn.close()
+    #     return True
 
 
     # Function to update the password in the password manager table
-    def update_password(self, sl_num, new_pass):
-        conn = sqlite3.connect(self.filename)
-        c = conn.cursor()
-        c.execute(""" UPDATE password_manager SET password = :val WHERE sl_no = :num """, {'val': new_pass, 'num': sl_num})
-        conn.commit()
-        conn.close()
-        return True
+    # def update_password(self, sl_num, new_pass):
+    #     conn = sqlite3.connect(self.filename)
+    #     c = conn.cursor()
+    #     c.execute(""" UPDATE password_manager SET password = :val WHERE sl_no = :num """, {'val': new_pass, 'num': sl_num})
+    #     conn.commit()
+    #     conn.close()
+    #     return True
 
 
     # Function to update the website in the password manager table
-    def update_website(self, sl_num, new_web):
-        conn = sqlite3.connect(self.filename)
-        c = conn.cursor()
-        c.execute(""" UPDATE password_manager SET website = :val WHERE sl_no = :num) """, {'val': new_web, 'num': sl_num})
-        conn.commit()
-        conn.close()
-        return True
+    # def update_website(self, sl_num, new_web):
+    #     conn = sqlite3.connect(self.filename)
+    #     c = conn.cursor()
+    #     c.execute(""" UPDATE password_manager SET website = :val WHERE sl_no = :num) """, {'val': new_web, 'num': sl_num})
+    #     conn.commit()
+    #     conn.close()
+    #     return True
 
 
     # Function to update the user credentials using the functions defined above
-    def update_credentials(self, sl_num, col_name, col_value):
-        if col_name == 'website':
-            res = self.update_website(sl_num, col_value)
-        elif col_name == 'username':
-            res = self.update_username(sl_num, col_value)
-        elif col_name == 'password':
-            res = self.update_password(sl_num, col_value)
-        else:
-            return False
-        return res
+    def update_credentials(self, sl_num, new_web, new_user, new_pass):
+        # if col_name == 'website':
+        #     res = self.update_website(sl_num, col_value)
+        # elif col_name == 'username':
+        #     res = self.update_username(sl_num, col_value)
+        # elif col_name == 'password':
+        #     res = self.update_password(sl_num, col_value)
+        # else:
+        #     return False
+        # return res
+        conn = sqlite3.connect(self.filename)
+        c = conn.cursor()
+        c.execute(""" UPDATE password_manager SET website = :val, username=:user, password=:pass  WHERE sl_no = :num """,
+                  {'val': new_web, 'user': new_user, 'pass': new_pass, 'num': sl_num})
+        conn.commit()
+        conn.close()
+        return True
 
 
     # Function to print a particular user credential to the terminal
@@ -149,12 +156,9 @@ class Database:
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         if inp_arg is None:
-            raise TypeError("Please provide a field to remove")
+            raise TypeError("Please enter a sl. no. of the entry")
         else:
-            if '.com' in inp_arg:
-                c.execute(""" SELECT * FROM password_manager WHERE website=:web """, {'web': inp_arg})
-            else:
-                c.execute(""" SELECT * FROM password_manager WHERE username=:user """, {'user': inp_arg})
+            c.execute(""" SELECT * FROM password_manager WHERE sl_no=:num """, {'num': inp_arg})
             values = c.fetchall()
             conn.commit()
             conn.close()
@@ -181,8 +185,6 @@ class Database:
             raise TypeError(" Please provide a field to remove ")
         else:
             c.execute(""" SELECT * FROM password_manager """)
-
-            c.execute(""" SELECT * FROM password_manager """)
             len_table = len(c.fetchall())
 
             c.execute(""" SELECT * FROM password_manager WHERE sl_no BETWEEN :start AND :end """,
@@ -195,7 +197,7 @@ class Database:
                 c.execute(""" UPDATE password_manager SET sl_no = sl_no -1 WHERE sl_no = :num """, {'num': entry[0]})
             conn.commit()
             conn.close()
-
+            return True
 
     # Function to remove all user credentials from the database
     def remove_all_values(self):
