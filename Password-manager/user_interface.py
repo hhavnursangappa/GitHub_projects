@@ -1,7 +1,8 @@
 # Import necessary modules
+import sys
 import tkinter as tk
 from tkinter import ttk
-import sys
+from functools import partial
 from tkinter import simpledialog
 from tkinter import messagebox
 from sql_setup import Database
@@ -30,14 +31,15 @@ class UserInterface:
         create_btn = tk.Button(bottom_frame, text="Create Vault", width=10, command=self.create_password_window)
         create_btn.pack(side='left', padx=5, pady=5)
 
-        windowWidth = self.root.winfo_reqwidth()
-        windowHeight = self.root.winfo_reqheight()
-
-        positionRight = int(self.root.winfo_screenwidth() / 2 - windowWidth / 2)
-        positionDown = int(self.root.winfo_screenheight() / 2 - windowHeight / 2)
-
-        self.root.geometry("+{}+{}".format(positionRight, positionDown))
-        self.root.resizable(False, False)
+        self.center_position_window(self.root)
+        # windowWidth = self.root.winfo_reqwidth()
+        # windowHeight = self.root.winfo_reqheight()
+        #
+        # positionRight = int(self.root.winfo_screenwidth() / 2 - windowWidth / 2)
+        # positionDown = int(self.root.winfo_screenheight() / 2 - windowHeight / 2)
+        #
+        # self.root.geometry("+{}+{}".format(positionRight, positionDown))
+        # self.root.resizable(False, False)
 
         self.root.mainloop()
 
@@ -58,20 +60,20 @@ class UserInterface:
 
         login_btn = tk.Button(frame, text="Login", width=10, command=self.login_password_vault)
         login_btn.pack(side='top', padx=5, pady=5)
+        self.login_win.bind('<Return>', self.login_btn_command)  # TODO: Bind the return event to all respective button function calls
 
-        windowWidth = self.login_win.winfo_reqwidth()
-        windowHeight = self.login_win.winfo_reqheight()
+        self.center_position_window(self.login_win)
+        # windowWidth = self.login_win.winfo_reqwidth()
+        # windowHeight = self.login_win.winfo_reqheight()
+        #
+        # positionX = int((self.login_win.winfo_screenwidth() / 2) - (windowWidth / 2))
+        # positionY = int((self.login_win.winfo_screenheight() / 2) - (windowHeight / 2))
+        #
+        # self.login_win.geometry("+{}+{}".format(positionX, positionY))
+        # self.login_win.resizable(False, False)
 
-        positionX = int((self.login_win.winfo_screenwidth() / 2) - (windowWidth / 2))
-        positionY = int((self.login_win.winfo_screenheight() / 2) - (windowHeight / 2))
 
-        self.login_win.geometry("+{}+{}".format(positionX, positionY))
-        self.login_win.resizable(False, False)
-
-        self.login_win.bind('<Return>', self.login_password_vault)  #TODO: Bind the return event to all respective button function calls
-
-
-    def login_password_vault(self, event):
+    def login_password_vault(self):
         m_data = db.is_master_data()
         if m_data:
             m_pwd = db.return_master_password()
@@ -94,12 +96,15 @@ class UserInterface:
         else:
             messagebox.showwarning("Login Failed", "You have not yet created a vault. Create one by entering the master password")
             self.login_win.destroy()
+            self.create_password_window()
 
 
     def create_password_window(self):
         self.pass_win = tk.Toplevel()
         self.pass_win.title("Create Vault")
         self.pass_win.grab_set()
+        self.pass_win.protocol("WM_DELETE_WINDOW", self.close_all_windows)
+        self.pass_win.bind('<Return>', self.create_btn_command)
 
         frame = tk.Frame(self.pass_win)
         frame.pack(side='top')
@@ -156,14 +161,14 @@ class UserInterface:
         pass_table_scroll.pack(side='right', fill='y')
 
         # Create tree view
-        cols = ('Sl.No.', 'Website', 'Username', 'Password')
+        cols = ('SL.NO.', 'WEBSITE', 'USERNAME', 'PASSWORD')
         self.password_table = ttk.Treeview(master=top_frame, columns=cols, padding=8, show='headings', selectmode='browse',
                                            yscrollcommand=pass_table_scroll.set, height=5)
         self.password_table.pack()
-        self.password_table.column("Sl.No.", width=10, anchor='center')
-        self.password_table.column("Website", anchor='center')
-        self.password_table.column("Username", anchor='center')
-        self.password_table.column("Password", anchor='center')
+        self.password_table.column("SL.NO.", width=10, anchor='center')
+        self.password_table.column("WEBSITE", anchor='center')
+        self.password_table.column("USERNAME", anchor='center')
+        self.password_table.column("PASSWORD", anchor='center')
 
         # Bind the left and right click actions to functions
         self.password_table.bind('<ButtonRelease-1>', self.return_entry_id)
@@ -174,6 +179,10 @@ class UserInterface:
             self.password_table.heading(col, text=col)
 
         self.update_password_table()
+
+        # Assignb alternating colors to rows of the table
+        self.password_table.tag_configure('odd_row', background='#cfd1d4')
+        self.password_table.tag_configure('even_row', background='white')
 
         # Configure the scroll bar
         pass_table_scroll.configure(command=self.password_table.yview)
@@ -196,21 +205,19 @@ class UserInterface:
         logout_btn.grid(row=1, column=1, padx=5, pady=5)
         # logout_btn.pack(side='top', padx=5, pady=5)
 
+        # style = ttk.Style()
+        # self.password_table.configure("TreeView.Heading", font=(None, 16))
+
         self.pass_table_win.update()
-        windowWidth = self.pass_table_win.winfo_reqwidth()
-        windowHeight = self.pass_table_win.winfo_reqheight()
-
-        positionX = int((self.pass_table_win.winfo_screenwidth() / 2) - (windowWidth / 2))
-        positionY = int((self.pass_table_win.winfo_screenheight() / 2) - (windowHeight / 2))
-
-        self.pass_table_win.geometry("+{}+{}".format(positionX, positionY))
-        self.pass_table_win.resizable(False, False)
+        self.center_position_window(self.pass_table_win)
 
 
     def update_password_table(self):
         values_to_insert = db.return_all_values()
+        tags = 'odd_row'
         for val in values_to_insert:
-            self.password_table.insert("", "end", values=(val[0], val[1], val[2], val[3]))
+            self.password_table.insert("", "end", values=(val[0], val[1], val[2], val[3]), tags=(tags, ))
+            tags = 'even_row' if tags == 'odd_row' else 'odd_row'
 
 
     def create_right_click_menu(self, event):
@@ -231,6 +238,7 @@ class UserInterface:
 
     def update_credentials_window(self):
         self.update_cred_win = tk.Toplevel()
+        self.update_cred_win.bind('<Return>', self.update_btn_command)
 
         update_web_label = tk.Label(self.update_cred_win, text="Updated website")
         update_web_label.grid(row=0, column=0, padx=5, pady=5, sticky='e')
@@ -254,16 +262,12 @@ class UserInterface:
         self.update_pass_field.insert(0, self.update_or_delete[3])
 
         update_btn = tk.Button(self.update_cred_win, text='Update', command=self.update_credentials)
-        update_btn.grid(row=3, column=0, columnspan=2, padx=35, pady=5, sticky='ew')
+        update_btn.grid(row=3, column=0, padx=5, pady=5, sticky='ew')
 
-        windowWidth = self.update_cred_win.winfo_reqwidth()
-        windowHeight = self.update_cred_win.winfo_reqheight()
+        cancel_btn = tk.Button(self.update_cred_win, text='Cancel', command=lambda: self.update_cred_win.destroy())
+        cancel_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
 
-        positionX = int((self.update_cred_win.winfo_screenwidth() / 2) - (windowWidth / 2))
-        positionY = int((self.update_cred_win.winfo_screenheight() / 2) - (windowHeight / 2))
-
-        self.update_cred_win.geometry("+{}+{}".format(positionX, positionY))
-        self.update_cred_win.resizable(False, False)
+        self.center_position_window(self.update_cred_win)
 
 
     def update_credentials(self):
@@ -299,6 +303,7 @@ class UserInterface:
     def add_credentials_window(self):
         self.cred_win = tk.Toplevel()
         self.cred_win.title = 'Add a new entry'
+        self.cred_win.bind('<Return>', self.add_btn_command)
 
         web_label = tk.Label(self.cred_win, text="Enter the website")
         web_label.grid(row=0, column=0, padx=5, pady=5, sticky='e')
@@ -319,16 +324,12 @@ class UserInterface:
         self.pass_field.grid(row=2, column=1, padx=5, pady=5, sticky='ew')
 
         add_btn = tk.Button(self.cred_win, text='Add', command=self.add_credentials)
-        add_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
+        add_btn.grid(row=3, column=0, padx=5, pady=5, sticky='ew')
 
-        windowWidth = self.cred_win.winfo_reqwidth()
-        windowHeight = self.cred_win.winfo_reqheight()
+        cancel_btn = tk.Button(self.cred_win, text='Cancel', command=lambda: self.cred_win.destroy())
+        cancel_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
 
-        positionX = int((self.cred_win.winfo_screenwidth() / 2) - (windowWidth / 2))
-        positionY = int((self.cred_win.winfo_screenheight() / 2) - (windowHeight / 2))
-
-        self.cred_win.geometry("+{}+{}".format(positionX, positionY))
-        self.cred_win.resizable(False, False)
+        self.center_position_window(self.cred_win)
 
 
     def add_credentials(self):
@@ -365,36 +366,41 @@ class UserInterface:
     def change_master_password_window(self):
         self.chng_master_pwd_win = tk.Toplevel()
         self.chng_master_pwd_win.title = "Change the master password"
+        self.chng_master_pwd_win.bind('<Return>', self.change_pass_btn_command)
 
         curr_pass_label = tk.Label(master=self.chng_master_pwd_win, text="Enter the current master password")
         curr_pass_label.grid(row=0, column=0, padx=5, pady=5, sticky='e')
 
-        self.curr_pass_field = tk.Entry(self.chng_master_pwd_win)  # TODO: Pass the parametr show='*'
+        self.curr_pass_field = tk.Entry(self.chng_master_pwd_win)  # TODO: Pass the parameter show='*'
         self.curr_pass_field.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
 
         new_pass_label = tk.Label(master=self.chng_master_pwd_win, text="Enter the new master password")
         new_pass_label.grid(row=1, column=0, padx=5, pady=5, sticky='e')
 
-        self.new_pass_field = tk.Entry(self.chng_master_pwd_win)  # TODO: Pass the parametr show='*'
+        self.new_pass_field = tk.Entry(self.chng_master_pwd_win)  # TODO: Pass the parameter show='*'
         self.new_pass_field.grid(row=1, column=1, padx=5, pady=5, sticky='ew')
 
         conf_pass_label = tk.Label(master=self.chng_master_pwd_win, text="Confirm the new master password")
         conf_pass_label.grid(row=2, column=0, padx=5, pady=5, sticky='e')
 
-        self.conf_pass_field = tk.Entry(self.chng_master_pwd_win)  # TODO: Pass the parametr show='*'
+        self.conf_pass_field = tk.Entry(self.chng_master_pwd_win)  # TODO: Pass the parameter show='*'
         self.conf_pass_field.grid(row=2, column=1, padx=5, pady=5, sticky='ew')
 
         change_pass_btn = tk.Button(self.chng_master_pwd_win, text='Change Master Password', command=self.change_master_password)
-        change_pass_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
+        change_pass_btn.grid(row=3, column=0, padx=5, pady=5, sticky='ew')
 
-        windowWidth = self.chng_master_pwd_win.winfo_reqwidth()
-        windowHeight = self.chng_master_pwd_win.winfo_reqheight()
+        cancel_btn = tk.Button(self.chng_master_pwd_win, text='Cancel', command=lambda: self.chng_master_pwd_win.destroy())
+        cancel_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
 
-        positionX = int((self.chng_master_pwd_win.winfo_screenwidth() / 2) - windowWidth / 2)
-        positionY = int((self.chng_master_pwd_win.winfo_screenheight() / 2) - windowHeight / 2)
-
-        self.chng_master_pwd_win.geometry("+{}+{}".format(positionX, positionY))
-        self.chng_master_pwd_win.resizable(False, False)
+        self.center_position_window(self.chng_master_pwd_win)
+        # windowWidth = self.chng_master_pwd_win.winfo_reqwidth()
+        # windowHeight = self.chng_master_pwd_win.winfo_reqheight()
+        #
+        # positionX = int((self.chng_master_pwd_win.winfo_screenwidth() / 2) - windowWidth / 2)
+        # positionY = int((self.chng_master_pwd_win.winfo_screenheight() / 2) - windowHeight / 2)
+        #
+        # self.chng_master_pwd_win.geometry("+{}+{}".format(positionX, positionY))
+        # self.chng_master_pwd_win.resizable(False, False)
 
 
     def change_master_password(self):
@@ -433,12 +439,46 @@ class UserInterface:
             self.pass_table_win.wait_window()
 
 
+    def center_position_window(self, window):
+        windowWidth = window.winfo_reqwidth()
+        windowHeight = window.winfo_reqheight()
+
+        positionX = int((window.winfo_screenwidth() / 2) - (windowWidth / 2))
+        positionY = int((window.winfo_screenheight() / 2) - (windowHeight / 2))
+
+        window.geometry("+{}+{}".format(positionX, positionY))
+        window.resizable(False, False)
+
+
     def close_all_windows(self):
         for widget in self.root.winfo_children():
             if isinstance(widget, tk.Toplevel):
                 widget.destroy()
         messagebox.showinfo('Exit', 'Goodbye! Have a nice day ahead')
         self.root.destroy()
+
+
+    # Functions bound to the '<Return>' event
+    def login_btn_command(self, event):
+        self.login_password_vault()
+
+
+    def create_btn_command(self, event):
+        self.create_password_vault()
+
+
+    def update_btn_command(self, event):
+        self.update_credentials()
+
+    def add_btn_command(self, event):
+        self.add_credentials()
+
+    def change_pass_btn_command(self, event):
+        self.change_master_password()
+
+
+
+
 
 
 
