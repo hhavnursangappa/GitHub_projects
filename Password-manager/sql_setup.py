@@ -11,10 +11,11 @@ class Database:
             if f_name.endswith('.db'):
                 self.filename = f_name
                 break
-            else:
-                with open("password.db", 'w') as db_file:
-                    self.filename = 'password.db'
-                    db_file.close()
+
+        if self.filename is None:
+            with open("password.db", 'w') as db_file:
+                self.filename = 'password.db'
+                db_file.close()
 
 
     # MASTER PASSWORD METHODS
@@ -23,7 +24,8 @@ class Database:
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         if not self.is_master_table():
-            c.execute(""" CREATE TABLE master_pwd_table (master_password text) """)
+            c.execute(""" CREATE TABLE master_pwd_table (master_password TEXT) """)
+            conn.commit()
         self.insert_master_password(pwd)
         conn.commit()
         conn.close()
@@ -166,6 +168,7 @@ class Database:
             conn.close()
             return True
 
+
     # Function to remove all user credentials from the database
     def remove_all_values(self):
         conn = sqlite3.connect(self.filename)
@@ -252,37 +255,6 @@ class Database:
         else:
             return False
 
-
-    # REDUNDANT OR UNUSED FUNCTIONS
-    # def is_present_pass(self):
-    #     try:
-    #         conn = sqlite3.connect(self.filename)
-    #         c = conn.cursor()
-    #         c.execute(""" SELECT * FROM master_pwd_table """)
-    #         data = c.fetchall()
-    #         conn.commit()
-    #         conn.close()
-    #         if len(data) == 0:
-    #             return False
-    #         else:
-    #             return True
-    #     except sqlite3.OperationalError:
-    #         return False
-
-    # def delete_master_user(self, inp_arg):
-    #     conn = sqlite3.connect(self.filename)
-    #     c = conn.cursor()
-    #     if inp_arg is None:
-    #         raise TypeError("Please provide a field to remove")
-    #     else:
-    #         if '.com' in inp_arg:
-    #             c.execute("""DELETE FROM password_manager WHERE website=:web""",
-    #                       {'web': inp_arg})  # Delete passwords for the mentioned website.
-    #         else:
-    #             c.execute("""DELETE FROM password_manager WHERE username=:user""",
-    #                       {'user': inp_arg})  # Delete password for the given username.
-    #     conn.commit()
-    #     conn.close()
 
 # if __name__ == '__main__':
     # connect_database()
