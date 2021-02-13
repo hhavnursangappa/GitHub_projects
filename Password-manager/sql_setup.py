@@ -12,7 +12,9 @@ class Database:
                 self.filename = f_name
                 break
             else:
-                self.filename = 'password.db'
+                with open("password.db", 'w') as db_file:
+                    self.filename = 'password.db'
+                    db_file.close()
 
 
     # MASTER PASSWORD METHODS
@@ -20,10 +22,9 @@ class Database:
     def create_master_password_table(self, pwd):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        if self.is_master_table():
-            self.insert_master_password(pwd)
-        else:
+        if not self.is_master_table():
             c.execute(""" CREATE TABLE master_pwd_table (master_password text) """)
+        self.insert_master_password(pwd)
         conn.commit()
         conn.close()
 
@@ -68,9 +69,10 @@ class Database:
     def create_pwd_table(self, sl_no, website, username, password):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        c.execute(""" SELECT name FROM sqlite_master WHERE type='table' and name='password_manager' """)
-        result = c.fetchall()
-        if len(result) == 1:
+        # c.execute(""" SELECT name FROM sqlite_master WHERE type='table' and name='password_manager' """)
+        # result = c.fetchall()
+        # if len(result) == 1:
+        if self.is_password_table():
             self.insert_values(sl_no, website, username, password)
         else:
             c.execute(""" CREATE TABLE password_manager (sl_no INTEGER PRIMARY KEY, website TEXT, username TEXT, password TEXT) """)
@@ -101,47 +103,8 @@ class Database:
         return num+1
 
 
-    # Function to update the username in the password manager table
-    # def update_username(self, sl_num, new_user):
-    #     conn = sqlite3.connect(self.filename)
-    #     c = conn.cursor()
-    #     c.execute(""" UPDATE password_manager SET username = :val WHERE sl_no = :num """, {'val': new_user, 'num': sl_num})
-    #     conn.commit()
-    #     conn.close()
-    #     return True
-
-
-    # Function to update the password in the password manager table
-    # def update_password(self, sl_num, new_pass):
-    #     conn = sqlite3.connect(self.filename)
-    #     c = conn.cursor()
-    #     c.execute(""" UPDATE password_manager SET password = :val WHERE sl_no = :num """, {'val': new_pass, 'num': sl_num})
-    #     conn.commit()
-    #     conn.close()
-    #     return True
-
-
-    # Function to update the website in the password manager table
-    # def update_website(self, sl_num, new_web):
-    #     conn = sqlite3.connect(self.filename)
-    #     c = conn.cursor()
-    #     c.execute(""" UPDATE password_manager SET website = :val WHERE sl_no = :num) """, {'val': new_web, 'num': sl_num})
-    #     conn.commit()
-    #     conn.close()
-    #     return True
-
-
     # Function to update the user credentials using the functions defined above
     def update_credentials(self, sl_num, new_web, new_user, new_pass):
-        # if col_name == 'website':
-        #     res = self.update_website(sl_num, col_value)
-        # elif col_name == 'username':
-        #     res = self.update_username(sl_num, col_value)
-        # elif col_name == 'password':
-        #     res = self.update_password(sl_num, col_value)
-        # else:
-        #     return False
-        # return res
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         c.execute(""" UPDATE password_manager SET website = :val, username=:user, password=:pass  WHERE sl_no = :num """,
@@ -170,7 +133,11 @@ class Database:
     def return_all_values(self):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        c.execute(""" SELECT * FROM password_manager """)  # SQL command to select all entries in a table
+        if self.is_password_table():
+            c.execute(""" SELECT * FROM password_manager """)  # SQL command to select all entries in a table
+        else:
+            c.execute(""" CREATE TABLE password_manager (sl_no INTEGER PRIMARY KEY, website TEXT, username TEXT, password TEXT) """)
+            c.execute(""" SELECT * FROM password_manager """)
         values = c.fetchall()
         conn.commit()
         conn.close()
@@ -203,9 +170,12 @@ class Database:
     def remove_all_values(self):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        c.execute(""" DELETE FROM password_manager """)  # SQL command to delete all entries from a table
-        conn.commit()
-        conn.close()
+        if self.is_password_table():
+            c.execute(""" DELETE FROM password_manager """)  # SQL command to delete all entries from a table
+            conn.commit()
+            conn.close()
+        else:
+            conn.close()
 
 
     # CHECK FUNCTIONS
