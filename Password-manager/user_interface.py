@@ -113,11 +113,14 @@ class UserInterface:
         create_btn = tk.Button(frame, text="Create", width=10, command=self.create_password_vault)
         create_btn.pack(side='top', padx=5, pady=5)
 
-        windowWidth = self.pass_win.winfo_reqwidth()
+        self.pass_win.update()
+        windowWidth = self.root.winfo_reqwidth()
         windowHeight = self.pass_win.winfo_reqheight()
 
-        positionX = int((self.login_win.winfo_screenwidth() / 2) - (windowWidth / 2))
-        positionY = int((self.login_win.winfo_screenheight() / 2) - (windowHeight / 2))
+        self.pass_win.geometry("{}x{}".format(windowWidth, windowHeight))
+
+        positionX = int((self.root.winfo_screenwidth() / 2) - (windowWidth / 2))
+        positionY = int((self.root.winfo_screenheight() / 2) - (windowHeight / 2))
 
         self.pass_win.geometry("+{}+{}".format(positionX, positionY))
         self.pass_win.resizable(False, False)
@@ -126,29 +129,27 @@ class UserInterface:
     def create_password_vault(self):
         db.remove_all_values()
         db.create_master_password_table(self.pass_field.get())
-        messagebox.showinfo("Vault creation successfull", "A Vault has been successfully created for you. Now you can do the following: ")
+        messagebox.showinfo("Vault creation successfull", "A Vault has been successfully created for you")
         self.pass_win.destroy()
         self.show_password_table()
 
 
     def show_password_table(self):
         self.root.withdraw()
-        self.login_win.destroy()
+        try:
+            self.login_win.destroy()
+        except AttributeError:
+            self.pass_win.destroy()
 
         self.pass_table_win = tk.Toplevel()
         self.pass_table_win.title("Password Manager")
+        self.pass_table_win.protocol("WM_DELETE_WINDOW", self.close_all_windows)
 
         top_frame = tk.Frame(self.pass_table_win)
         top_frame.pack(side='top', fill='both')
 
         bottom_frame = tk.Frame(self.pass_table_win)
         bottom_frame.pack(side='top')
-
-        # bottom_left_frame = tk.Frame(self.pass_table_win)
-        # bottom_left_frame.pack(side='left')
-
-        # bottom_right_frame = tk.Frame(self.pass_table_win)
-        # bottom_right_frame.pack(side='left')
 
         # Create scrollbar
         pass_table_scroll = tk.Scrollbar(master=top_frame)
@@ -159,7 +160,10 @@ class UserInterface:
         self.password_table = ttk.Treeview(master=top_frame, columns=cols, padding=8, show='headings', selectmode='browse',
                                            yscrollcommand=pass_table_scroll.set, height=5)
         self.password_table.pack()
-        self.password_table.column("Sl.No.", width=10)
+        self.password_table.column("Sl.No.", width=10, anchor='center')
+        self.password_table.column("Website", anchor='center')
+        self.password_table.column("Username", anchor='center')
+        self.password_table.column("Password", anchor='center')
 
         # Bind the left and right click actions to functions
         self.password_table.bind('<ButtonRelease-1>', self.return_entry_id)
@@ -180,9 +184,6 @@ class UserInterface:
         add_entry_btn.grid(row=0, column=0, padx=5, pady=5)
         # add_entry_btn.pack(side='top', padx=5, pady=5)
 
-        # delete_entry_btn = tk.Button(bottom_left_frame, text="Delete a credential", width=15, command=self.delete_credentials)
-        # delete_entry_btn.pack(side='top', padx=5, pady=5)
-
         change_mas_pwd_btn = tk.Button(bottom_frame, text="Change master key", command=self.change_master_password_window)
         change_mas_pwd_btn.grid(row=0, column=1, padx=5, pady=5)
         # change_mas_pwd_btn.pack(side='top', padx=5, pady=5)
@@ -195,6 +196,7 @@ class UserInterface:
         logout_btn.grid(row=1, column=1, padx=5, pady=5)
         # logout_btn.pack(side='top', padx=5, pady=5)
 
+        self.pass_table_win.update()
         windowWidth = self.pass_table_win.winfo_reqwidth()
         windowHeight = self.pass_table_win.winfo_reqheight()
 
@@ -252,7 +254,7 @@ class UserInterface:
         self.update_pass_field.insert(0, self.update_or_delete[3])
 
         update_btn = tk.Button(self.update_cred_win, text='Update', command=self.update_credentials)
-        update_btn.grid(row=3, column=0, columnspan=2, padx=25, pady=5, sticky='ew')
+        update_btn.grid(row=3, column=0, columnspan=2, padx=35, pady=5, sticky='ew')
 
         windowWidth = self.update_cred_win.winfo_reqwidth()
         windowHeight = self.update_cred_win.winfo_reqheight()
@@ -354,6 +356,7 @@ class UserInterface:
         ans = messagebox.askyesnocancel("Delete all credentials", "Are you sure you want to delete all credentials and clear the vault?")
         if ans:
             db.remove_all_values()
+            self.password_table.delete(*self.password_table.get_children())
             self.update_password_table()
         else:
             self.pass_table_win.wait_window()
@@ -423,9 +426,9 @@ class UserInterface:
     def logout(self):
         ans = messagebox.askyesnocancel('Logout', 'Are you sure you want to log out of the vault')
         if ans:
-            self.pass_table_win.destroy()
-            messagebox.showinfo('Logout', 'Goodbye! Have a nice day ahead')
+            # self.pass_table_win.destroy()
             self.close_all_windows()
+            messagebox.showinfo('Logout', 'Goodbye! Have a nice day ahead')
         else:
             self.pass_table_win.wait_window()
 
@@ -434,6 +437,8 @@ class UserInterface:
         for widget in self.root.winfo_children():
             if isinstance(widget, tk.Toplevel):
                 widget.destroy()
+        messagebox.showinfo('Exit', 'Goodbye! Have a nice day ahead')
+        self.root.destroy()
 
 
 
@@ -443,7 +448,7 @@ class UserInterface:
 
 
 
-# BARE BONES IMPLEMENATION OF THE PASSWORD MANAGER USER INTERFACE
+# COMMAND LINE VERSION OF THE PASSWORD MANAGER
 close = False
 
 def manager():
