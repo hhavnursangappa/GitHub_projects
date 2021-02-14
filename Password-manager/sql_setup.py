@@ -71,9 +71,6 @@ class Database:
     def create_pwd_table(self, sl_no, website, username, password):
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
-        # c.execute(""" SELECT name FROM sqlite_master WHERE type='table' and name='password_manager' """)
-        # result = c.fetchall()
-        # if len(result) == 1:
         if self.is_password_table():
             self.insert_values(sl_no, website, username, password)
         else:
@@ -254,7 +251,3 @@ class Database:
                 return False
         else:
             return False
-
-
-# if __name__ == '__main__':
-    # connect_database()
