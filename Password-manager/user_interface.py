@@ -1,8 +1,8 @@
 # Import necessary modules
 import sys
+import pyperclip
 import tkinter as tk
 from tkinter import ttk
-from functools import partial
 from tkinter import simpledialog
 from tkinter import messagebox
 from sql_setup import Database
@@ -80,12 +80,11 @@ class UserInterface:
             pass_key = str(self.pass_field.get())
             attempt = 0
             while pass_key != m_pwd:
-                if attempt <= 3:
-                    pass_key = simpledialog.askstring(title="Login Failed", prompt=f"Wrong password. You have {3 - attempt} attempts left. Please try again: ")
+                if attempt < 3:
+                    pass_key = simpledialog.askstring(title="Login Failed", prompt=f"Wrong password. You have {3 - attempt} attempts left. \nPlease try again: ", show='*')
                     attempt += 1
-                    # self.login_win.wait_window()
                 else:
-                    messagebox.showinfo("Login Failed", "You have exhausted your attempts. Try again after 24 hrs")
+                    messagebox.showinfo("Login Failed", "You have exhausted your attempts. \nThe application is going to terminate now.")
                     self.close_all_windows()
 
             self.login_win.withdraw()
@@ -165,7 +164,7 @@ class UserInterface:
         self.password_table = ttk.Treeview(master=top_frame, columns=cols, padding=8, show='headings', selectmode='browse',
                                            yscrollcommand=pass_table_scroll.set, height=5)
         self.password_table.pack()
-        self.password_table.column("SL.NO.", width=10, anchor='center')
+        self.password_table.column("SL.NO.", width=45, anchor='center')
         self.password_table.column("WEBSITE", anchor='center')
         self.password_table.column("USERNAME", anchor='center')
         self.password_table.column("PASSWORD", anchor='center')
@@ -222,18 +221,27 @@ class UserInterface:
 
     def create_right_click_menu(self, event):
         row = self.password_table.identify_row(event.y)
+        self.password_table.selection_set(row)
+        column = self.password_table.identify_column(event.x)
         self.update_or_delete = self.password_table.item(row)['values']
         menu = tk.Menu(self.pass_table_win, tearoff=0)
         menu.add_command(label='Update', command=self.update_credentials_window)
         menu.add_command(label='Delete', command=self.delete_credentials)
-        menu.add_command(label='Copy', command=self.update_credentials_window)
+        menu.add_command(label='Copy', command=lambda: self.copy_data(column))
         menu.tk_popup(event.x_root, event.y_root)
+
+
+    def copy_data(self, column):
+        # row = self.update_or_delete[0]
+        column = int(column[-1]) - 1
+        text_to_copy = self.update_or_delete[column]
+        pyperclip.copy(str(text_to_copy))
 
 
     def return_entry_id(self, event):
         focus = self.password_table.focus()
         self.update_or_delete = self.password_table.item(focus)['values']
-        print("Done")
+        # print("Done")
 
 
     def update_credentials_window(self):
@@ -419,7 +427,7 @@ class UserInterface:
                         messagebox.showwarning("Change master password", "There was a problem changing the password.")
                         self.chng_master_pwd_win.wait_window()
                 else:
-                    messagebox.showwarning("Change master password", "The old and the new password cannot be same. Please enter a unique password")
+                    messagebox.showwarning("Change master password", "The old and the new password cannot be same. \nPlease enter a unique password")
                     self.chng_master_pwd_win.wait_window()
             else:
                 messagebox.showwarning("Change master password", "The confirmed password doesnt match the new password. Please check")
@@ -456,6 +464,7 @@ class UserInterface:
                 widget.destroy()
         messagebox.showinfo('Exit', 'Goodbye! Have a nice day ahead')
         self.root.destroy()
+        sys.exit()
 
 
     # Functions bound to the '<Return>' event
@@ -470,8 +479,10 @@ class UserInterface:
     def update_btn_command(self, event):
         self.update_credentials()
 
+
     def add_btn_command(self, event):
         self.add_credentials()
+
 
     def change_pass_btn_command(self, event):
         self.change_master_password()
