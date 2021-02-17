@@ -10,10 +10,10 @@ Download / Clone the project to any desired location on your local machine. Navi
 cd <path_to_the_directory>
 ```
 
-First install the necessary packages from the file requirements.txt using the [pip](https://pip.pypa.io/en/stable/) command
+First make sure you have python 3.7 or above instlled on your local machine. Then install the necessary packages from the file requirements.txt using the [pip](https://pip.pypa.io/en/stable/) command
 
 ```python
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Usage
@@ -28,7 +28,3 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
-
-
-
-
