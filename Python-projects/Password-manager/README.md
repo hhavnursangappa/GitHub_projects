@@ -17,7 +17,8 @@ pip3 install -r requirements.txt
 ```
 
 ## Usage
-Once the above command finishes installing the necessary package, run python script 'user_interface.py' using the following command to boot the application
+Once the above command finishes installing the necessary package, run python script 'user_interface.py' using the following command to boot the application. To update or copy or delete an entry, select the entry, right click and choose the
+required option from the menu.
 
 ```python
 python user_interface.py
