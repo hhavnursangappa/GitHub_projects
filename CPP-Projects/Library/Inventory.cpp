@@ -3,6 +3,7 @@
 #include <string>
 #include "Inventory.h"
 #include "Book.h"
+#include <algorithm>
 
 void Inventory::AddBook(Book book)
 {
@@ -20,8 +21,11 @@ void Inventory::AddBook(Book book)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 bool Inventory::FindBookByTitle(std::string title, Book &book)
 {
+	/* This is an iterator in C++. The begin() method points to the first element 
+	of the vector and the end() method pints to the last element of the vector. This means iterate through the vector from first to last and find the object Book(0, title, ""). This avoids the use 
+	of another for loop for the same purpose */
 	std::vector<Book>::iterator it = std::find(Inventory::Books.begin(), Inventory::Books.end(), Book(0, title, "")); // str::find returns the position of the element
-	if (it != Inventory::Books.end())																				  // == Books.end() means the element was not found
+	if (it != Inventory::Books.end()) // == Books.end() means the element was not found
 	{
 		book = *it;
 		return true;
