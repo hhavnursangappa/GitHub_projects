@@ -1,13 +1,14 @@
-#include "stdafx.h"
 #include "Book.h"
+#include <string>
 
-Book::Book()
-{}
+using namespace std;
 
-Book::Book(int id, std::string title, std::string author)
+Book::Book(int id, string title, string author)
 {
 	Book::Id = id;
 	Book::Title = title;
 	Book::Author = author;
-	Book::CheckedOut = false;
 }
+	
+
+
