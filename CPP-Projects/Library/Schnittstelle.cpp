@@ -2,6 +2,7 @@
 #include <string>
 #include "Book.h"
 #include "Inventory.h"
+// #include "CheckInOrOutResult.h"
 
 using namespace std;
 
@@ -30,9 +31,9 @@ void AddNewbook()
     cout << "Author: ";
     getline(cin, author);
 
-    id = _inventory.Books.size() + 1;
+    // id = _inventory.GetNextBookId();
 
-    Book newBook(id, title, author);
+    Book newBook(title, author);
     _inventory.AddBook(newBook);
 
     cout << "The book has been successfully added\n";
@@ -40,15 +41,7 @@ void AddNewbook()
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void ListAllBooks()
 {
-    cout << "ID"
-         << "\t"
-         << "TITLE"
-         << "\t"
-         << "AUTHOR" << endl;
-    for (int ii = 0; ii < _inventory.Books.size(); ii++)
-    {
-        cout << _inventory.Books[ii].Id << "\t" << _inventory.Books[ii].Title << "\t" << _inventory.Books[ii].Author << endl;
-    }
+    _inventory.DisplayAllBooks();
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void RemoveBook()
@@ -63,61 +56,68 @@ void RemoveBook()
     cout << "The book has been successfully removed\n";
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void CheckInOrOutBook(bool checkIn)
+void CheckInOrOutBook(bool checkOut)
 {
     string title;
     string inOrOut;
 
-    if (checkIn)
-    {
-        inOrOut = "in";
-    }
-    else
+    if (checkOut)
     {
         inOrOut = "out";
     }
+    else
+    {
+        inOrOut = "in";
+    }
 
-    cout << "Enter the title of the book to check" + inOrOut + ": ";
+    cout << "Enter the title of the book to check " + inOrOut + ": ";
     getline(cin, title);
 
-    int foundBookIndex = _inventory.FindBookByTitle(title);
+    CheckInOrOutResult result = _inventory.CheckInOrOutBook(title, checkOut);
+
+    if (result == CheckInOrOutResult::BookNotFound)
+    {
+        cout << "Book not found" << endl;
+    }
+
+    else if (result == CheckInOrOutResult::Success)
+    {
+        cout << "Book checked " << inOrOut + "!" << endl;
+    }
+    else
+    {
+        cout << "Book failed checcking " << inOrOut << endl;
+    }
+}
+    /* int foundBookIndex = _inventory.FindBookByTitle(title);
     if (foundBookIndex >= 0)
     {
-        Book *foundBook = &_inventory.Books[foundBookIndex]; // Every time 'foundBook' is created it creates a copy of the  Book object and even though we edit the attribute of the object, when we run it again, a copy of it will be generated. Therefore in order to edit the attributes of the object we create a pointer to the memory of this object. This will allow us to edit the properties of the same 'foundBook' object that was created and not a copy of it.
-
-        if (!foundBook->CheckedOut == checkIn) // '->' has to be used to acces the properties of the pointer
+        Book *foundBook = _inventory.GetBookByIndex(foundBookIndex);
+        // Book *foundBook = &bookObj; // Every time 'foundBook' is created it creates a copy of the  Book object and even though we edit the attribute of the object, when we run it again, a copy of it will be generated. Therefore in order to edit the attributes of the object we create a pointer to the memory of this object. This will allow us to edit the properties of the same 'foundBook' object that was created and not a copy of it.
+        // bool &value = foundBook->CheckedOut;
+        // Book foundBookAddress = &foundBook;
+        if (foundBook->CheckedOut == checkOut) // '->' has to be used to acces the properties of the pointer
         {
-            cout << "Book has already been checked" + inOrOut + "!\n";
+            cout << "Book has already been checked " + inOrOut + "!\n";
             return;
         }
 
-        if (checkIn)
+        if (checkOut)
         {
-            _inventory.CheckInBook(foundBook);
+            _inventory.CheckOutBook(foundBook);
+            cout << "Book is successfully checked out !\n";
+            
         }
 
         else
         {
-            _inventory.CheckOutBook(foundBook);
-            cout << "Book is successfully checked out !\n";
+            _inventory.CheckInBook(foundBook);
         }
-    }
-}
+    } */
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void DisplayCheckedOutBooks()
 {
-    cout << "ID"
-         << "\t"
-         << "TITLE"
-         << "\t"
-         << "AUTHOR" << endl;
-    for (int ii = 0; ii < _inventory.Books.size(); ii++)
-    {
-        if (_inventory.Books[ii].CheckedOut)
-        {
-            cout << _inventory.Books[ii].Id << "\t" << _inventory.Books[ii].Title << "\t" << _inventory.Books[ii].Author << endl;
-        }
-    }
+    _inventory.DisplayCheckedOutBooks();
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 int main()
@@ -147,11 +147,11 @@ int main()
             break;
 
         case 3:
-            CheckInOrOutBook(false);
+            CheckInOrOutBook(true);
             break;
 
         case 4:
-            CheckInOrOutBook(true);
+            CheckInOrOutBook(false);
             break;
 
         case 5:
