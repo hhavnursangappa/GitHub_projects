@@ -1,5 +1,6 @@
 # Import necessary modules
 import sys
+import random
 import pyperclip
 import tkinter as tk
 from tkinter import ttk
@@ -178,8 +179,8 @@ class UserInterface:
         self.password_table.column("USERNAME", anchor='center')
         self.password_table.column("PASSWORD", anchor='center')
 
-        l1 = tk.Label(master=self.top_right_frame, text='Show Passwords')
-        l1.pack(side='top', pady=0)
+        # l1 = tk.Label(master=self.top_right_frame, text='Show Passwords')
+        # l1.pack(side='top', pady=0)
 
         # Bind the left and right click actions to functions
         self.password_table.bind('<ButtonRelease-1>', self.return_entry_id)
@@ -220,16 +221,18 @@ class UserInterface:
         values_to_insert = db.return_all_values()
         self.all_entries = values_to_insert
         tags = 'odd_row'
+        iid = 0
         for val in values_to_insert:
-            self.password_table.insert("", "end", values=(val[0], val[1], val[2], '*' * len(val[3])), tags=(tags, ))
+            iid += 1
+            self.password_table.insert("", "end", iid=str(iid), values=(val[0], val[1], val[2], '*' * len(val[3])), tags=(tags, ))
             tags = 'even_row' if tags == 'odd_row' else 'odd_row'
 
             # Insert checkboxes
-            var = tk.IntVar()
-            ch_box = tk.Checkbutton(master=self.top_right_frame, text="", variable=var)
-            ch_box.pack(side='top')
-            self.checkbox_list.append(ch_box)
-            self.var_list.append(var)
+            # var = tk.IntVar()
+            # ch_box = tk.Checkbutton(master=self.top_right_frame, text="", variable=var)
+            # ch_box.pack(side='top')
+            # self.checkbox_list.append(ch_box)
+            # self.var_list.append(var)
 
 
     def create_right_click_menu(self, event):
@@ -329,32 +332,36 @@ class UserInterface:
 
     def add_credentials_window(self):
         self.cred_win = tk.Toplevel()
+        self.cred_win.title("Add Credentials")
         self.cred_win.title = 'Add a new entry'
         self.cred_win.bind('<Return>', self.add_btn_command)
 
         web_label = tk.Label(self.cred_win, text="Enter the website")
-        web_label.grid(row=0, column=0, padx=5, pady=5, sticky='e')
+        web_label.grid(row=0, column=0, padx=5, pady=5, sticky='w')
 
         self.web_field = tk.Entry(self.cred_win)
-        self.web_field.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+        self.web_field.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky='ew')
 
         user_label = tk.Label(self.cred_win, text="Enter the username")
-        user_label.grid(row=1, column=0, padx=5, pady=5, sticky='e')
+        user_label.grid(row=1, column=0, padx=5, pady=5, sticky='w')
 
         self.user_field = tk.Entry(self.cred_win)
-        self.user_field.grid(row=1, column=1, padx=5, pady=5, sticky='ew')
+        self.user_field.grid(row=1, column=1, columnspan=2, padx=5, pady=5, sticky='ew')
 
         pass_label = tk.Label(self.cred_win, text="Enter the passsword")  # TODO: Insert the parameter show='*'
-        pass_label.grid(row=2, column=0, padx=5, pady=5, sticky='e')
+        pass_label.grid(row=2, column=0, padx=5, pady=5, sticky='w')
 
         self.pass_field = tk.Entry(self.cred_win)
-        self.pass_field.grid(row=2, column=1, padx=5, pady=5, sticky='ew')
+        self.pass_field.grid(row=2, column=1, columnspan=2, padx=5, pady=5, sticky='ew')
 
         add_btn = tk.Button(self.cred_win, text='Add', command=self.add_credentials)
         add_btn.grid(row=3, column=0, padx=5, pady=5, sticky='ew')
 
+        gen_pass_btn = tk.Button(self.cred_win, text='Generate Password', command=self.generate_password)
+        gen_pass_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
+
         cancel_btn = tk.Button(self.cred_win, text='Cancel', command=lambda: self.cred_win.destroy())
-        cancel_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
+        cancel_btn.grid(row=3, column=2, padx=5, pady=5, sticky='ew')
 
         self.center_position_window(self.cred_win)
 
@@ -375,9 +382,54 @@ class UserInterface:
         db.create_pwd_table(sl_no, web, username, password)
         values = db.return_all_values()
         val_to_add = values[-1]
-        self.password_table.insert("", "end", values=(val_to_add[0], val_to_add[1], val_to_add[2], val_to_add[3]))
+        iid = len(values) + 1
+        self.password_table.insert("", "end", iid=str(iid), values=(val_to_add[0], val_to_add[1], val_to_add[2], ('*' * len(val_to_add[3]))))
         messagebox.showinfo("Added Credentials", "The password has been successfully added to the vault")
+        # self.password_table.delete(*self.password_table.get_children())
+        # self.update_password_table()
         self.pass_table_win.wait_window()
+
+
+    def generate_password(self):
+        lower_case = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        upper_case = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        spl_char = ['!', '"', '§', '$', '%', '&', '/', '(', ')', '=', '?']
+
+        # password_length = 14
+        num_lower_case = 4
+        num_upper_case = 4
+        num_numbers = 3
+        num_spl_char = 3
+
+        password = []
+
+        # Random selection of lower case letters
+        for ii in range(num_lower_case + 1):
+            char = random.choice(lower_case)
+            password.append(char)
+
+        # Random selection of upper case letters
+        for ii in range(num_upper_case + 1):
+            char = random.choice(upper_case)
+            password.append(char)
+
+        # Random selection of numbers
+        for ii in range(num_numbers + 1):
+            char = random.choice(numbers)
+            password.append(char)
+
+        # Random selection of special characters
+        for ii in range(num_spl_char + 1):
+            char = random.choice(spl_char)
+            password.append(char)
+
+        # Shuffle the password
+        random.shuffle(password)
+        password = ''.join(password)
+
+        self.pass_field.delete('0', tk.END)
+        self.pass_field.insert('0', string=password)
 
 
     def delete_all_credentials(self):
@@ -505,202 +557,6 @@ class UserInterface:
 
     def change_pass_btn_command(self, event):
         self.change_master_password()
-
-
-
-
-
-
-
-
-
-
-
-
-
-# COMMAND LINE VERSION OF THE PASSWORD MANAGER
-close = False
-
-def manager():
-    global close
-    while not close:
-        print("\n%%%%%%%%%%%%%%%%%%%%%%%%% ---- MAIN MENU ---- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-        print("Welcome to your password manager.")
-        print("1. Login to your password vault\n"
-              "2. Create a password vault")
-        print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-
-        try:
-            choice = int(input("Enter what you wish to do (1 or 2): "))
-        except ValueError:
-            print("Invalid Choice! Please enter 1 or 2\n")
-            continue
-
-        if choice == 1:
-            m_data = db.is_master_data()
-            if m_data:
-                login_password_vault()
-            else:
-                print("You have not yet created a vault. Create one by entering the master password")
-                create_password_vault()
-
-        elif choice == 2:
-            create_password_vault()
-
-        elif close:
-            break
-
-        else:
-            print("Invalid choice. Please enter 1 or 2")
-
-    print("Goodbye! Have a nice day ahead !")
-    sys.exit()
-
-
-def create_password_vault():
-    db.remove_all_values()
-    # master_user = str(input("Master Username: "))
-    master_pass = str(input("Enter a Master Password for your vault: "))
-    db.create_master_password_table(master_pass)
-    print("\nA Vault has been successfully created for you. Now you can do the following: ")
-    menu()
-
-
-def login_password_vault():
-    m_pwd = db.return_master_password()
-    pass_key = str(input("Enter the master passkey: "))
-    attempt = 0
-    while pass_key != m_pwd:
-        if attempt <= 3:
-            pass_key = str(input(f"Wrong password. You have {3 - attempt} attempts left. Please try again: "))
-            attempt += 1
-        else:
-            print("You have exhausted your attempts. Try again after 24 hrs")
-            sys.exit()
-
-    print("You have successfully logged in")
-    print('\n')
-    menu()
-
-
-def print_entries(entries):
-    print("*************************************************************************************")
-    print("|\tSL.NO\t|\tWEBSITE\t|\tUSERNAME\t|\tPASSWORD\t|")
-    print("-------------------------------------------------------------------------------------")
-    for entry in entries:
-        row = []
-        row.append(str(entry[0]))
-        row.append(entry[1])
-        row.append(entry[2])
-        row.append(entry[3])
-
-        print('|\t' + '\t|\t'.join(row) + '\t|')
-    print("*************************************************************************************")
-
-
-def menu():
-    global close
-    sel = None
-    while sel != 8:
-        print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ---- SUB MENU ---- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-        print("1. Create a new entry\n"
-              "2. View all credentials\n"
-              "3. Filter entry\n"
-              "4. Delete an existing credential\n"
-              "5. Delete all credentials\n"
-              "6. Update existing credentials\n"
-              "7. Change Master Password\n"
-              "8. Logout")
-        print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-
-        try:
-            sel = int(input("Enter your selection (1-8): "))
-        except ValueError:
-            print("Invalid Choice!. Please enter a number in the range (1-7)")
-            continue
-
-        if sel == 1:
-            web = str(input("Enter the website: "))
-            username = str(input("Enter the username. Use '_' instead of whitespace: "))
-            password = str(input("Enter the password: "))
-            table_exists = db.is_password_table()
-            if table_exists:
-                sl_no = db.return_serial_number()
-            else:
-                sl_no = 1
-            db.create_pwd_table(sl_no, web, username, password)
-            print(f"The password has been successfully added to the vault")
-            print('\n')
-
-        elif sel == 2:
-            values = db.print_all_values()
-            if len(values) == 0:
-                print("The vault is empty. Start adding some passwords")
-            else:
-                print("\nThe entries in the database are as follows: ")
-                print_entries(values)
-            print('\n')
-
-        elif sel == 3:
-            inp_arg = str(input("Enter the username or the website for which you would like to view the password for: "))
-            print(f"The password for {inp_arg} are as follows:")
-            values = db.print_value(inp_arg)
-            if len(values) == 0:
-                print("The vault is empty. Start adding some passwords\n")
-            else:
-                print_entries(values)
-            print('\n')
-
-        elif sel == 4:
-            # inp_arg = str(input("Enter the username or the website for which you would like to delete the password for: "))
-            inp_arg = int(input("Enter the Sl. No of the entry, which you would like to delete: "))
-            conf = str(input(f"Are you sure you want to delete the password for {inp_arg}? [y/n]: "))
-            if conf == 'y' or conf == 'Y':
-                db.remove_values(inp_arg)
-                print(f"The password for {inp_arg} has been successfully removed from the vault")
-                print('\n')
-
-        elif sel == 5:
-            conf = str(input(f"Are you sure you want to delete all passwords and clear the vault? [y/n]: "))
-            if conf == 'y' or conf == 'Y':
-                db.remove_all_values()
-            print("All passwords from the vault have been successfully deleted")
-            print('\n')
-
-        elif sel == 6:
-            num = str(input("Enter the sl_no of the entry you wish to update: "))
-            col = str(input("Enter the name of the column you wish to update: "))
-            val = str(input("Enter the new credentials for the above mentioned column: "))
-            res = db.update_credentials(num, col, val)
-            if res:
-                print("The credentials have been successfully updated")
-            else:
-                print("There was an error in updating the credentials!")
-
-        elif sel == 7:
-            while True:
-                curr_m_pwd = str(input("Enter the current master password: "))
-                new_m_pwd = str(input("Enter the new master password: "))
-                conf_m_pwd = str(input("Confirm the new master password: "))
-                m_pwd = db.return_master_password()
-                if curr_m_pwd == m_pwd:
-                    if conf_m_pwd == new_m_pwd:
-                        if new_m_pwd != curr_m_pwd:
-                            res = db.update_master_pwd(new_m_pwd)
-                            if res:
-                                print("Master password changed successfully !\n")
-                                break
-                            else:
-                                print("There was a problem changing the password.\n")
-                        else:
-                            print("The old and the new password cannot be same. Please enter a unique password\n")
-                    else:
-                        print("The confirmed password doesnt match the new password. Please check\n")
-                else:
-                    print("Please enter the current master password correctly\n")
-
-    print("You have successfully logged out of the vault.")
-    close = True
 
 
 if __name__ == '__main__':
