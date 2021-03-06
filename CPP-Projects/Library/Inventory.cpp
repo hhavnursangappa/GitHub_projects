@@ -64,6 +64,8 @@ int Inventory::FindBookByTitle(std::string title)
 
 CheckInOrOutResult Inventory::CheckInOrOutBook(std::string title, bool checkOut)
 {
+	/* Every time 'foundBook' is created it creates a copy of the  Book object and even though we edit the attribute of the object, when we run it again, a copy of it will be generated. Therefore in order to edit the attributes of the object we create a pointer to the memory of this object. This will allow us to edit the properties of the same 'foundBook' object that was created and not a copy of it.*/
+
 	int foundBookIndex = FindBookByTitle(title);
 
 	if (foundBookIndex < 0)
@@ -71,8 +73,23 @@ CheckInOrOutResult Inventory::CheckInOrOutBook(std::string title, bool checkOut)
 		return CheckInOrOutResult::BookNotFound;
 	}
 
-	Books[foundBookIndex].CheckInOrOut(checkOut);
-	return CheckInOrOutResult::Success;
+	else if (checkOut == Books[foundBookIndex].IsCheckedOut())
+	{
+		if (checkOut)
+		{
+			return CheckInOrOutResult::AlreadyCheckedOut;
+		}		
+		else
+		{
+			return CheckInOrOutResult::AlreadyCheckedIn;
+		}
+	}
+	
+	else
+	{
+		Books[foundBookIndex].CheckInOrOut(checkOut);
+		return CheckInOrOutResult::Success;
+	}	
 }
 //-------------------------------------------------------------------------------------------------------
 
