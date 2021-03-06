@@ -1,25 +1,102 @@
 #include <iostream>
 #include <string>
+#include <vector>
+#include <algorithm>
 #include "Book.h"
 #include "Inventory.h"
+#include "User.h"
+
 // #include "CheckInOrOutResult.h"
 
 using namespace std;
 
 Inventory _inventory; // underscore to denote that it is a global variable
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+vector<User> _users; 
+User _loggedInUser;
+//-------------------------------------------------------------------------------------------------------
+
+void CreateAccount()
+{
+    User newUser;
+
+    /* cout << "\nEnter FirstName: ";
+    getline(cin, newUser.FirstName);
+
+    cout << "Enter LastName: ";
+    getline(cin, newUser.LastName); */
+
+    cout << "Enter Username: ";
+    cin >> newUser.Username;
+
+    cout << "\nEnter a choice for the role: \n";
+    cout << "1: Admin \n";
+    cout << "2: Employee \n";
+    cout << "3: Member \n" << endl; 
+
+    int roleChoice;
+    cin >> roleChoice;
+    cin.ignore();
+
+    if (roleChoice == 1)
+        newUser.Role = Role::Admin;
+    else if (roleChoice == 2)
+        newUser.Role == Role::Employee;
+    else if (roleChoice == 3)
+        newUser.Role = Role::Member;
+        
+    _users.push_back(newUser);
+}
+//-------------------------------------------------------------------------------------------------------
+
+void Login()
+{
+    cout << "\nEnter your choice: " << endl;
+    cout << "1. Login" << endl;
+    cout << "2. Create Account" << endl;
+
+    int choice;
+    cin >> choice;
+
+    // if (choice == 1)
+        // EnterLogin();
+    if (choice == 2)
+        CreateAccount();
+    
+    string username;
+    cout << "Enter username: " << endl;
+    cin >> username;
+
+    // Create a user object with the above username
+    User user;
+    user.Username = username;
+
+    vector<User>::iterator it = find(_users.begin(), _users.end(), user);
+
+    if (it != _users.end())
+    {
+        _loggedInUser = _users[it - _users.begin()];
+    }    
+}
+//-------------------------------------------------------------------------------------------------------
+
 void DisplayMainMenu()
 {
     cout << "\nChoose an option: \n";
-    cout << "1 = Add Book\n";
+
+    if (_loggedInUser.Role == Role::Employee || _loggedInUser.Role == Role::Admin)
+    {
+        cout << "1 = Add Book\n";
+        cout << "5 = Remove book from library\n";
+        cout << "6 = List all checked out books\n";
+    }
+    
     cout << "2 = List all Books\n";
     cout << "3 = Checkout a Book\n";
     cout << "4 = Checkin a Book\n";
-    cout << "5 = Remove book from library\n";
-    cout << "6 = List all checked out books\n";
     cout << "0 = Exit\n";
 }
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------
+
 void AddNewbook()
 {
     string title, author;
@@ -38,12 +115,14 @@ void AddNewbook()
 
     cout << "The book has been successfully added\n";
 }
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------
+
 void ListAllBooks()
 {
     _inventory.DisplayAllBooks();
 }
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------
+
 void RemoveBook()
 {
     string title;
@@ -55,7 +134,8 @@ void RemoveBook()
 
     cout << "The book has been successfully removed\n";
 }
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------
+
 void CheckInOrOutBook(bool checkOut)
 {
     string title;
@@ -84,44 +164,27 @@ void CheckInOrOutBook(bool checkOut)
     {
         cout << "Book checked " << inOrOut + "!" << endl;
     }
-    else
+    else if (result == CheckInOrOutResult::AlreadyCheckedOut || result == CheckInOrOutResult::AlreadyCheckedIn)
+    {
+        cout << "Book already checked " + inOrOut << endl;
+    }    
+    else 
     {
         cout << "Book failed checcking " << inOrOut << endl;
     }
 }
-    /* int foundBookIndex = _inventory.FindBookByTitle(title);
-    if (foundBookIndex >= 0)
-    {
-        Book *foundBook = _inventory.GetBookByIndex(foundBookIndex);
-        // Book *foundBook = &bookObj; // Every time 'foundBook' is created it creates a copy of the  Book object and even though we edit the attribute of the object, when we run it again, a copy of it will be generated. Therefore in order to edit the attributes of the object we create a pointer to the memory of this object. This will allow us to edit the properties of the same 'foundBook' object that was created and not a copy of it.
-        // bool &value = foundBook->CheckedOut;
-        // Book foundBookAddress = &foundBook;
-        if (foundBook->CheckedOut == checkOut) // '->' has to be used to acces the properties of the pointer
-        {
-            cout << "Book has already been checked " + inOrOut + "!\n";
-            return;
-        }
+//-------------------------------------------------------------------------------------------------------
 
-        if (checkOut)
-        {
-            _inventory.CheckOutBook(foundBook);
-            cout << "Book is successfully checked out !\n";
-            
-        }
-
-        else
-        {
-            _inventory.CheckInBook(foundBook);
-        }
-    } */
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void DisplayCheckedOutBooks()
 {
     _inventory.DisplayCheckedOutBooks();
 }
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------
+
 int main()
 {
+    Login();
+
     while (true)
     {
         int choice;
