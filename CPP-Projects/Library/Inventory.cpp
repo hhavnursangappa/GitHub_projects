@@ -1,23 +1,27 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream>
+#include <algorithm>
 #include "Inventory.h"
 #include "Book.h"
-#include <algorithm>
 
 using namespace std;
 
-Inventory::Inventory()
-{
-	Inventory::MaxBookId = 0;
-}
-//-------------------------------------------------------------------------------------------------------
-
 void Inventory::AddBook(Book book)
 {
-	Inventory::MaxBookId++;
-	book.SetBookId(MaxBookId);
+	int nextBookId = 0;
+
+	if (Inventory::Books.size() > 0)
+		nextBookId = Inventory::Books.back().Id + 1;
+
+	book.Id = nextBookId;
 	Inventory::Books.push_back(book);
+
+	// Write Books into a file
+	ofstream oFile("book.txt", ios_base::app);
+	oFile << book.GetBookFileData() << endl;
+	oFile.close();
 }
 //-------------------------------------------------------------------------------------------------------
 
@@ -78,18 +82,22 @@ CheckInOrOutResult Inventory::CheckInOrOutBook(std::string title, bool checkOut)
 		if (checkOut)
 		{
 			return CheckInOrOutResult::AlreadyCheckedOut;
-		}		
+		}
 		else
 		{
 			return CheckInOrOutResult::AlreadyCheckedIn;
 		}
 	}
-	
-	else
+
+	Inventory::Books[foundBookIndex].CheckInOrOut(checkOut);
+	ofstream oFile("book.txt");
+	for (int ii=0; ii < Inventory::Books.size(); ii++) 
 	{
-		Books[foundBookIndex].CheckInOrOut(checkOut);
-		return CheckInOrOutResult::Success;
-	}	
+		oFile << Inventory::Books[ii].GetBookFileData() << endl;
+	}
+
+	oFile.close();
+	return CheckInOrOutResult::Success;
 }
 //-------------------------------------------------------------------------------------------------------
 
@@ -120,6 +128,44 @@ void Inventory::DisplayCheckedOutBooks()
 		{
 			Books[ii].DisplayBook();
 		}
+	}
+}
+//-------------------------------------------------------------------------------------------------------
+
+void Inventory::LoadBooks()
+{
+	Inventory::Books.clear();
+	ifstream iFile("book.txt");
+
+	string BookData[7];
+	string BookLine;
+
+	while (getline(iFile, BookLine))
+{		
+		// Extract Id
+		size_t index = BookLine.find("|");
+		BookData[0] = BookLine.substr(0, index);
+
+		// Extract Title
+		size_t prevIndex = index;
+		size_t nextIndex = BookLine.find("|", index+1);
+		BookData[1] = BookLine.substr(prevIndex + 1, nextIndex - prevIndex - 1);
+
+		// Extract Author
+		size_t newIndex = nextIndex;
+		size_t newNextIndex = BookLine.find("|", newIndex + 1);
+		BookData[2] = BookLine.substr(newIndex + 1, newNextIndex - newIndex - 1);
+
+		// Extract Checckout status
+		size_t newNewIndex = BookLine.find("|", newNextIndex + 1);
+		BookData[3] = BookLine.substr(newNextIndex + 1, newNewIndex - newNextIndex - 1);
+
+		Book loadedBook(BookData[1], BookData[2]);
+		loadedBook.Id = stoi(BookData[0]);		
+
+		loadedBook.CheckInOrOut(stoi(BookData[3]));
+
+		Inventory::Books.push_back(loadedBook);
 	}
 }
 //-------------------------------------------------------------------------------------------------------
