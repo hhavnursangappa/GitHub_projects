@@ -30,8 +30,8 @@ bool Book::IsCheckedOut()
 	return CheckedOut;
 }
 //-------------------------------------------------------------------------------------------------------
-void Book::SetBookId(int id)
+std::string Book::GetBookFileData()
 {
-	Id = id;
+	return to_string(Id) + "|" + Title + "|" + Author + "|" + (CheckedOut ? "1" : "0");
 }
 //-------------------------------------------------------------------------------------------------------
