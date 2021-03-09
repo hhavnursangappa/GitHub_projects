@@ -7,12 +7,9 @@
 class Inventory
 {
 private:
-	int MaxBookId;
 	std::vector<Book> Books;
 
 public:
-	Inventory();
-
 	//int GetNextBookId();  // Avoided this function as it may be abused by users to simply incerment the Id without adding books
 	int NumberOfBooks();
 	Book GetBookByIndex(int index);
@@ -22,4 +19,5 @@ public:
 	CheckInOrOutResult CheckInOrOutBook(std::string title, bool checkOut);
 	void DisplayAllBooks();
 	void DisplayCheckedOutBooks();
+	void LoadBooks();
 };
