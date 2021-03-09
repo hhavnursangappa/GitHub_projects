@@ -2,18 +2,69 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <fstream>
 #include "Book.h"
 #include "Inventory.h"
-#include "User.h"
+#include "User.h" 
 
 // #include "CheckInOrOutResult.h"
 
 using namespace std;
 
-Inventory _inventory; // underscore to denote that it is a global variable
+Inventory _inventory; // Underscore to denote that it is a global variable
 vector<User> _users; 
 User _loggedInUser;
-//-------------------------------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------------------------------
+
+Role GetRoleFromIntVal(int roleVal)
+{
+    Role outRole;
+
+    if (roleVal == 0)
+        outRole = Role::Admin;
+    else if (roleVal == 1)
+        outRole = Role::Employee;
+    else if (roleVal == 2)
+        outRole = Role::Member;
+    return outRole;
+}
+//------------------------------------------------------------------------------------------------------
+
+void LoadUsers()
+{
+    ifstream inFile("users.txt");
+    string listData[2];
+
+    string userLine;
+    while(getline(inFile, userLine))
+    {
+        size_t index = userLine.find("|");
+
+        listData[0] = userLine.substr(0, index);
+        listData[1] = userLine.substr(index + 1);
+
+        User loadedUser;
+        loadedUser.Username = listData[0];
+        loadedUser.Role = GetRoleFromIntVal(stoi(listData[1])); // 'stoi' is a function to vonvert from string to integer
+
+        _users.push_back(loadedUser);        
+    }    
+}
+//------------------------------------------------------------------------------------------------------
+
+int GetIntValFromRole(Role role)
+{
+    int rolVal = -1;
+    if (role == Role::Admin)
+        rolVal = 0;
+    else if (role == Role::Employee)
+        rolVal = 1;
+    else if (role == Role::Member)
+        rolVal = 2;
+    return rolVal;
+}
+//------------------------------------------------------------------------------------------------------
 
 void CreateAccount()
 {
@@ -45,57 +96,77 @@ void CreateAccount()
         newUser.Role = Role::Member;
         
     _users.push_back(newUser);
+
+    ofstream oFile("users.txt", ios_base::app);
+    oFile << newUser.Username << "|" << GetIntValFromRole(newUser.Role) << endl;
+    oFile.close(); 
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 void Login()
 {
-    cout << "\nEnter your choice: " << endl;
-    cout << "1. Login" << endl;
-    cout << "2. Create Account" << endl;
+    while (true)
+    {    
+        cout << "\nEnter your choice: " << endl;
+        cout << "1. Login" << endl;
+        cout << "2. Create Account" << endl;
 
-    int choice;
-    cin >> choice;
+        int choice;
+        cin >> choice;
+        cin.ignore();
 
-    // if (choice == 1)
-        // EnterLogin();
-    if (choice == 2)
-        CreateAccount();
-    
-    string username;
-    cout << "Enter username: " << endl;
-    cin >> username;
+        if (choice == 1)
+        {
+            while (true)
+            {
+                string username;
+                cout << "Enter username: ";
+                cin >> username;
 
-    // Create a user object with the above username
-    User user;
-    user.Username = username;
+                // Create a user object with the above username
+                User user;
+                user.Username = username;
 
-    vector<User>::iterator it = find(_users.begin(), _users.end(), user);
+                vector<User>::iterator it = find(_users.begin(), _users.end(), user);
 
-    if (it != _users.end())
-    {
-        _loggedInUser = _users[it - _users.begin()];
-    }    
+                if (it != _users.end())
+                {
+                    _loggedInUser = _users[it - _users.begin()];
+                    break;
+                }
+            }
+        }
+
+        else if (choice == 2)
+        {
+            CreateAccount();
+        }
+
+        else
+            cout << "Invalid choice. Please choose from the menu\n";
+            // delete choice;            
+    }
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 void DisplayMainMenu()
 {
     cout << "\nChoose an option: \n";
+    cout << "1 = List all Books\n";
+    cout << "2 = Checkout a Book\n";
+    cout << "3 = Checkin a Book\n";
 
     if (_loggedInUser.Role == Role::Employee || _loggedInUser.Role == Role::Admin)
     {
-        cout << "1 = Add Book\n";
+        cout << "4 = Add Book\n";
         cout << "5 = Remove book from library\n";
         cout << "6 = List all checked out books\n";
+        cout << "7 = Logout user\n";
     }
     
-    cout << "2 = List all Books\n";
-    cout << "3 = Checkout a Book\n";
-    cout << "4 = Checkin a Book\n";
     cout << "0 = Exit\n";
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 void AddNewbook()
 {
@@ -115,13 +186,13 @@ void AddNewbook()
 
     cout << "The book has been successfully added\n";
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 void ListAllBooks()
 {
     _inventory.DisplayAllBooks();
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 void RemoveBook()
 {
@@ -134,7 +205,7 @@ void RemoveBook()
 
     cout << "The book has been successfully removed\n";
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 void CheckInOrOutBook(bool checkOut)
 {
@@ -173,62 +244,71 @@ void CheckInOrOutBook(bool checkOut)
         cout << "Book failed checcking " << inOrOut << endl;
     }
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 void DisplayCheckedOutBooks()
 {
     _inventory.DisplayCheckedOutBooks();
 }
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 int main()
 {
-    Login();
+    LoadUsers();
 
     while (true)
     {
-        int choice;
+        Login();
+        _inventory.LoadBooks();
+        bool isLoggedIn =true;
 
-        DisplayMainMenu();
-
-        cin >> choice;
-        cin.ignore(); // When 'cin' and 'getline' are used together, it may cause some problems. So adding this will resolve it
-
-        switch (choice)
+        while (isLoggedIn)
         {
-        case 0:
-            cout << "Thank you. Goodbye !\n"
-                 << endl;
-            return 0;
+            DisplayMainMenu();
 
-        case 1:
-            AddNewbook();
-            break;
+            int choice;
+            cin >> choice;
+            cin.ignore(); // When 'cin' and 'getline' are used together, it may cause some problems. So adding this will resolve it
 
-        case 2:
-            ListAllBooks();
-            break;
+            switch (choice)
+            {
+            case 0:
+                cout << "Thank you. Goodbye !\n" << endl;
+                return 0;
 
-        case 3:
-            CheckInOrOutBook(true);
-            break;
+            case 1:
+                ListAllBooks();            
+                break;
 
-        case 4:
-            CheckInOrOutBook(false);
-            break;
+            case 2:
+                CheckInOrOutBook(true);
+                break;
 
-        case 5:
-            RemoveBook();
-            break;
+            case 3:
+                CheckInOrOutBook(false);
+                break;
 
-        case 6:
-            DisplayCheckedOutBooks();
-            break;
+            case 4:
+                AddNewbook();
+                break;
 
-        default:
-            cout << "Invalid Selection. Try again!\n"
-                 << endl;
-            break;
+            case 5:
+                RemoveBook();
+                break;
+
+            case 6:
+                DisplayCheckedOutBooks();
+                break;
+
+            case 7:
+                isLoggedIn = false;
+                break;
+
+            default:
+                cout << "Invalid Selection. Try again!\n"
+                    << endl;
+                break;
+            }
         }
     }
 }
