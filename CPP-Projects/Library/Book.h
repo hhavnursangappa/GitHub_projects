@@ -7,19 +7,19 @@
 
 class Book
 {
-	private:
-		int Id;
+	private:		
 		std::string Title;
 		std::string Author;
 		bool CheckedOut;
 //-------------------------------------------------------------------------------------------------------
 	public:
+		int Id;
 		Book();										 // Declaration of the default constructor for the class 'Book'
 		Book(std::string title, std::string author); // Declaration of the custom constructor for the class 'Book'
 		void CheckInOrOut(bool checkOut);
 		void DisplayBook();
 		bool IsCheckedOut();
-		void SetBookId(int id);
+		std::string GetBookFileData();
 		//-----------------------------------------------------------------------------------------------
 		/* Syntax for operator overloading:
 			<return_data_type> operator <operand>(const <name of the user defined class> &input_argument)
