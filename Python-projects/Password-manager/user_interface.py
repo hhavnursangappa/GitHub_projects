@@ -1,6 +1,8 @@
 # Import necessary modules
 import sys
 import random
+from functools import partial
+
 import pyperclip
 import tkinter as tk
 from tkinter import ttk
@@ -18,7 +20,7 @@ class UserInterface:
         # self.update_or_delete = None
         self.all_entries = []
         self.checkbox_list = []
-        self.var_list = []
+        self.chk_var_list = []
 
         top_frame = tk.Frame(self.root)
         top_frame.pack(side='top')
@@ -32,18 +34,10 @@ class UserInterface:
         login_btn = tk.Button(bottom_frame, text="Login", width=10, command=self.login_window)
         login_btn.pack(side='left', padx=5, pady=5)
 
-        create_btn = tk.Button(bottom_frame, text="Create Vault", width=10, command=self.create_password_window)
-        create_btn.pack(side='left', padx=5, pady=5)
+        # create_btn = tk.Button(bottom_frame, text="Create Vault", width=10, command=self.create_password_window)
+        # create_btn.pack(side='left', padx=5, pady=5)
 
         self.center_position_window(self.root)
-        # windowWidth = self.root.winfo_reqwidth()
-        # windowHeight = self.root.winfo_reqheight()
-        #
-        # positionRight = int(self.root.winfo_screenwidth() / 2 - windowWidth / 2)
-        # positionDown = int(self.root.winfo_screenheight() / 2 - windowHeight / 2)
-        #
-        # self.root.geometry("+{}+{}".format(positionRight, positionDown))
-        # self.root.resizable(False, False)
 
         self.root.mainloop()
 
@@ -93,7 +87,7 @@ class UserInterface:
 
             self.login_win.withdraw()
             self.root.withdraw()
-            messagebox.showinfo("Login Successfull", "You have successfully logged in")
+            messagebox.showinfo("Login Successful", "You have successfully logged in")
             self.show_password_table()
 
         else:
@@ -159,8 +153,11 @@ class UserInterface:
         top_left_frame = tk.Frame(master=top_frame)
         top_left_frame.pack(side='left')
 
-        self.top_right_frame = tk.Frame(master=top_frame)
-        self.top_right_frame.pack(side='left')
+        self.top_right_frame = tk.Frame(master=top_frame, bg='white')
+        self.top_right_frame.pack(side='left', anchor='n', pady=0)
+
+        self.canvas = tk.Canvas(master=self.top_right_frame, bg='white')
+        self.canvas.pack(side='top', fill='x', anchor='n', pady=0)
 
         bottom_frame = tk.Frame(self.pass_table_win)
         bottom_frame.pack(side='top')
@@ -172,24 +169,28 @@ class UserInterface:
         # Create tree view
         cols = ('SL.NO.', 'WEBSITE', 'USERNAME', 'PASSWORD')
         self.password_table = ttk.Treeview(master=top_left_frame, columns=cols, padding=8, show='headings', selectmode='browse',
-                                           yscrollcommand=pass_table_scroll.set, height=5)
-        self.password_table.pack()
+                                           yscrollcommand=pass_table_scroll.set, height=3)
+        self.password_table.pack(side='top', anchor='n')
         self.password_table.column("SL.NO.", width=45, anchor='center')
         self.password_table.column("WEBSITE", anchor='center')
         self.password_table.column("USERNAME", anchor='center')
         self.password_table.column("PASSWORD", anchor='center')
 
-        # l1 = tk.Label(master=self.top_right_frame, text='Show Passwords')
-        # l1.pack(side='top', pady=0)
+        self.canvas.configure(yscrollcommand=pass_table_scroll.set)
+        l1 = tk.Label(master=self.canvas, text='Make Visible', bg='white')
+        l1.pack(side='top', anchor='n', pady=6)
 
         # Bind the left and right click actions to functions
         self.password_table.bind('<ButtonRelease-1>', self.return_entry_id)
         self.password_table.bind('<Button-3>', self.create_right_click_menu)
 
-        # Insert values in to the tree view
+        # Insert headings in to the tree view widget
         for col in cols:
             self.password_table.heading(col, text=col)
 
+        # Insert values in to the tree view widget
+        style = ttk.Style(self.pass_table_win)
+        style.configure('Treeview', rowheight=24)
         self.update_password_table()
 
         # Assign alternating colors to rows of the table
@@ -197,17 +198,21 @@ class UserInterface:
         self.password_table.tag_configure('even_row', background='white')
 
         # Configure the scroll bar
-        pass_table_scroll.configure(command=self.password_table.yview)
+        # pass_table_scroll.configure(command=self.password_table.yview)
+        pass_table_scroll.configure(command=self.view_all)
         self.pass_table_win.grid()
 
         # Add the buttons
+        self.show_pass_btn = tk.Button(master=bottom_frame, text="Show passwords",  width=15, command=self.show_or_hide_passwords)
+        self.show_pass_btn.grid(row=0, column=0, padx=5, pady=5)
+
         add_entry_btn = tk.Button(bottom_frame, text="Add credentials", width=15, command=self.add_credentials_window)
-        add_entry_btn.grid(row=0, column=0, padx=5, pady=5)
+        add_entry_btn.grid(row=0, column=1, padx=5, pady=5)
 
-        change_mas_pwd_btn = tk.Button(bottom_frame, text="Change master key", command=self.change_master_password_window)
-        change_mas_pwd_btn.grid(row=0, column=1, padx=5, pady=5)
+        change_mas_pwd_btn = tk.Button(bottom_frame, text="Change master key", width=15, command=self.change_master_password_window)
+        change_mas_pwd_btn.grid(row=0, column=2, padx=5, pady=5)
 
-        delete_all_btn = tk.Button(bottom_frame, text="Delete all credentials", width=15, command=self.delete_all_credentials)
+        delete_all_btn = tk.Button(bottom_frame, text="Delete all", width=15, command=self.delete_all_credentials)
         delete_all_btn.grid(row=1, column=0, padx=5, pady=5)
 
         logout_btn = tk.Button(bottom_frame, text="Logout", width=15, command=self.logout)
@@ -217,22 +222,34 @@ class UserInterface:
         self.center_position_window(self.pass_table_win)
 
 
-    def update_password_table(self):
+    def view_all(self, *args):
+        self.password_table.yview(*args)
+        self.canvas.yview(*args)
+
+
+    def update_password_table(self, mask=None):
         values_to_insert = db.return_all_values()
         self.all_entries = values_to_insert
         tags = 'odd_row'
+        color = '#cfd1d4'
         iid = 0
-        for val in values_to_insert:
+
+        for idx, val in enumerate(values_to_insert):
             iid += 1
-            self.password_table.insert("", "end", iid=str(iid), values=(val[0], val[1], val[2], '*' * len(val[3])), tags=(tags, ))
+            if mask or (mask is None):
+                self.password_table.insert("", "end", iid=str(iid), values=(val[0], val[1], val[2], '*' * len(val[3])), tags=(tags, ))
+            else:
+                self.password_table.insert("", "end", iid=str(iid), values=(val[0], val[1], val[2], val[3]), tags=(tags, ))
             tags = 'even_row' if tags == 'odd_row' else 'odd_row'
 
-            # Insert checkboxes
-            # var = tk.IntVar()
-            # ch_box = tk.Checkbutton(master=self.top_right_frame, text="", variable=var)
-            # ch_box.pack(side='top')
-            # self.checkbox_list.append(ch_box)
-            # self.var_list.append(var)
+            # TODO: Delete if checkboxes doesn't work
+            # Insert checkboxes color=
+            var = tk.IntVar()
+            ch_box = tk.Checkbutton(master=self.canvas, text="", variable=var, bg=color, command=partial(self.check_box_callback, idx))
+            ch_box.pack(side='top', fill='x', pady=0)
+            self.checkbox_list.append(ch_box)
+            self.chk_var_list.append(var)
+            color = 'white' if color == '#cfd1d4'  else '#cfd1d4'
 
 
     def create_right_click_menu(self, event):
@@ -247,6 +264,16 @@ class UserInterface:
         menu.tk_popup(event.x_root, event.y_root)
 
 
+    # TODO: Delete if checkboxes doesn't work
+    def check_box_callback(self, row):
+        # row = self.password_table.identify_row(event.y)
+        row_to_insert = self.all_entries[int(row)]
+        if self.chk_var_list[row].get() == 1:
+            self.password_table.item(str(row + 1), values=row_to_insert)
+        else:
+            self.password_table.item(str(row + 1), values=(row_to_insert[0], row_to_insert[1], row_to_insert[2], ('*' * len(row_to_insert[3]))))
+
+
     def copy_data(self, row, column):
         column = int(column[-1]) - 1
         row = int(row[-1]) - 1
@@ -256,8 +283,9 @@ class UserInterface:
 
     def return_entry_id(self, event):
         self.password_table.focus()
+        # print(type(self.password_table.focus()))
         # focus = self.password_table.focus()
-        # self.update_or_delete = self.password_table.item(focus)['values']
+        # self.update_or_delete = self.password_table.item(focus, 'values')
 
 
     def update_credentials_window(self, row):
@@ -265,7 +293,7 @@ class UserInterface:
         entry = self.all_entries[idx]
 
         self.update_cred_win = tk.Toplevel()
-        self.update_cred_win.bind('<Return>', self.update_btn_command)
+        self.update_cred_win.bind('<Return>', lambda: self.update_btn_command(idx))
 
         update_web_label = tk.Label(self.update_cred_win, text="Updated website")
         update_web_label.grid(row=0, column=0, padx=5, pady=5, sticky='e')
@@ -304,8 +332,10 @@ class UserInterface:
         if res:
             messagebox.showinfo("Credentials updated", "Your credentials have been updated")
             self.update_cred_win.destroy()
-            self.password_table.delete(*self.password_table.get_children())
-            self.update_password_table()
+            self.refresh_password_table()
+            # self.password_table.delete(*self.password_table.get_children())
+            # self.delete_checkboxes()
+            # self.update_password_table()
         else:
             messagebox.showwarning("Credentials update failed", "Your credentials couldn't be updated")
         self.pass_table_win.wait_window()
@@ -320,8 +350,10 @@ class UserInterface:
             res = db.remove_values(sl_no_to_remove)
             if res:
                 messagebox.showinfo("Credential Deleted", "The entry " + ', '.join(entry_to_delete[1:]) + " has been successfully deleted.")
-                self.password_table.delete(*self.password_table.get_children())
-                self.update_password_table()
+                self.refresh_password_table()
+                # self.password_table.delete(*self.password_table.get_children())
+                # self.delete_checkboxes()
+                # self.update_password_table()
                 self.pass_table_win.wait_window()
             else:
                 messagebox.showwarning("Credential Delete Failed", "The entry " + ', '.join(entry_to_delete[1:]) + " couldn't be deleted.")
@@ -380,11 +412,18 @@ class UserInterface:
             sl_no = 1
 
         db.create_pwd_table(sl_no, web, username, password)
-        values = db.return_all_values()
-        val_to_add = values[-1]
-        iid = len(values) + 1
-        self.password_table.insert("", "end", iid=str(iid), values=(val_to_add[0], val_to_add[1], val_to_add[2], ('*' * len(val_to_add[3]))))
+        # values = db.return_all_values()
+        # val_to_add = values[-1]
+        # iid = len(values) + 1
+
+        # var = tk.IntVar()
+        # self.password_table.insert("", "end", iid=str(iid), values=(val_to_add[0], val_to_add[1], val_to_add[2], ('*' * len(val_to_add[3]))))
+        # ch_box = tk.Checkbutton(master=self.top_right_frame, text="", variable=var, command=partial(self.check_box_callback, len(values)))
         messagebox.showinfo("Added Credentials", "The password has been successfully added to the vault")
+        self.refresh_password_table()
+        # self.password_table.delete(*self.password_table.get_children())
+        # self.delete_checkboxes()
+        # self.update_password_table()
         # self.password_table.delete(*self.password_table.get_children())
         # self.update_password_table()
         self.pass_table_win.wait_window()
@@ -436,10 +475,17 @@ class UserInterface:
         ans = messagebox.askyesnocancel("Delete all credentials", "Are you sure you want to delete all credentials and clear the vault?")
         if ans:
             db.remove_all_values()
-            self.password_table.delete(*self.password_table.get_children())
-            self.update_password_table()
+            self.refresh_password_table()
+            # self.delete_checkboxes()
+            # self.update_password_table()
         else:
             self.pass_table_win.wait_window()
+
+
+    def refresh_password_table(self):
+        self.password_table.delete(*self.password_table.get_children())
+        self.delete_checkboxes()
+        self.update_password_table()
 
 
     def change_master_password_window(self):
@@ -472,14 +518,6 @@ class UserInterface:
         cancel_btn.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
 
         self.center_position_window(self.chng_master_pwd_win)
-        # windowWidth = self.chng_master_pwd_win.winfo_reqwidth()
-        # windowHeight = self.chng_master_pwd_win.winfo_reqheight()
-        #
-        # positionX = int((self.chng_master_pwd_win.winfo_screenwidth() / 2) - windowWidth / 2)
-        # positionY = int((self.chng_master_pwd_win.winfo_screenheight() / 2) - windowHeight / 2)
-        #
-        # self.chng_master_pwd_win.geometry("+{}+{}".format(positionX, positionY))
-        # self.chng_master_pwd_win.resizable(False, False)
 
 
     def change_master_password(self):
@@ -506,6 +544,27 @@ class UserInterface:
         else:
             messagebox.showwarning("Change master password", "Please enter the current master password correctly\n")
             self.chng_master_pwd_win.wait_window()
+
+
+    def show_or_hide_passwords(self):
+        text = self.show_pass_btn.cget("text")
+        self.password_table.delete(*self.password_table.get_children())
+        self.delete_checkboxes()
+
+        if text == "Show passwords":
+            self.update_password_table(mask=False)
+            self.show_pass_btn.configure(text="Hide passwords")
+        elif text == "Hide passwords":
+            self.update_password_table(mask=True)
+            self.show_pass_btn.configure(text="Show passwords")
+
+
+    def delete_checkboxes(self):
+        for widget in self.canvas.winfo_children():
+            if isinstance(widget, tk.Checkbutton):
+                widget.destroy()
+        self.checkbox_list = []
+        self.chk_var_list = []
 
 
     def logout(self):
@@ -547,8 +606,8 @@ class UserInterface:
         self.create_password_vault()
 
 
-    def update_btn_command(self, event):
-        self.update_credentials()
+    def update_btn_command(self, event, idx):
+        self.update_credentials(idx)
 
 
     def add_btn_command(self, event):
