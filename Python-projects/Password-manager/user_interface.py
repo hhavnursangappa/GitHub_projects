@@ -1,13 +1,12 @@
 # Import necessary modules
 import sys
 import random
-from functools import partial
-
 import pyperclip
 import tkinter as tk
 from tkinter import ttk
 from tkinter import simpledialog
 from tkinter import messagebox
+from functools import partial
 from sql_setup import Database
 
 db = Database()  # Instantiate the database object
@@ -17,7 +16,6 @@ class UserInterface:
         self.root = tk.Tk()
         self.root.title("Hello User")
         self.root.protocol("WM_DELETE_WINDOW", self.close_all_windows)
-        # self.update_or_delete = None
         self.all_entries = []
         self.checkbox_list = []
         self.chk_var_list = []
@@ -61,14 +59,6 @@ class UserInterface:
         self.login_win.bind('<Return>', self.login_btn_command)  # TODO: Bind the return event to all respective button function calls
 
         self.center_position_window(self.login_win)
-        # windowWidth = self.login_win.winfo_reqwidth()
-        # windowHeight = self.login_win.winfo_reqheight()
-        #
-        # positionX = int((self.login_win.winfo_screenwidth() / 2) - (windowWidth / 2))
-        # positionY = int((self.login_win.winfo_screenheight() / 2) - (windowHeight / 2))
-        #
-        # self.login_win.geometry("+{}+{}".format(positionX, positionY))
-        # self.login_win.resizable(False, False)
 
 
     def login_password_vault(self):
@@ -79,7 +69,7 @@ class UserInterface:
             attempt = 0
             while pass_key != m_pwd:
                 if attempt < 3:
-                    pass_key = simpledialog.askstring(title="Login Failed", prompt=f"Wrong password. You have {3 - attempt} attempts left. \nPlease try again: ", show='*')
+                    pass_key = simpledialog.askstring(title="Login Failed", prompt=f"Wrong password. Attempts left: {3 - attempt}. \nPlease try again: ", show='*')
                     attempt += 1
                 else:
                     messagebox.showinfo("Login Failed", "You have exhausted your attempts. \nThe application is going to terminate now.")
@@ -131,7 +121,7 @@ class UserInterface:
     def create_password_vault(self):
         db.remove_all_values()
         db.create_master_password_table(self.pass_field.get())
-        messagebox.showinfo("Vault creation successfull", "A Vault has been successfully created for you")
+        messagebox.showinfo("Vault creation successful", "A Vault has been successfully created for you")
         self.pass_win.destroy()
         self.show_password_table()
 
@@ -151,34 +141,50 @@ class UserInterface:
         top_frame.pack(side='top', fill='both')
 
         top_left_frame = tk.Frame(master=top_frame)
-        top_left_frame.pack(side='left')
+        top_left_frame.pack(side='left', pady=0)
 
-        self.top_right_frame = tk.Frame(master=top_frame, bg='white')
-        self.top_right_frame.pack(side='left', anchor='n', pady=0)
+        top_right_frame = tk.Frame(master=top_frame, bg='white')
+        top_right_frame.pack(side='left', anchor='n', fill='both', pady=0)
 
-        self.canvas = tk.Canvas(master=self.top_right_frame, bg='white')
-        self.canvas.pack(side='top', fill='x', anchor='n', pady=0)
+        top_right_label_frame = tk.Frame(master=top_right_frame, bg='white')
+        top_right_label_frame.pack(side='top', anchor='n', fill='both', pady=0)
+
+        top_right_canvas_frame = tk.Frame(master=top_right_frame, bg='white')
+        top_right_canvas_frame.pack(side='top', anchor='n', fill='both', pady=0)
+
+        self.canvas = tk.Canvas(master=top_right_canvas_frame, bg='white', bd=0, highlightthickness=0)  # TODO: Define canvas in top_right_canvas_frame
+        self.canvas.pack(side='top', anchor='nw', fill='both', expand=True, pady=0)
 
         bottom_frame = tk.Frame(self.pass_table_win)
         bottom_frame.pack(side='top')
 
         # Create scrollbar
-        pass_table_scroll = tk.Scrollbar(master=top_frame)
+        pass_table_scroll = tk.Scrollbar(master=top_frame, orient=tk.VERTICAL, command=self.view_all)
         pass_table_scroll.pack(side='right', fill='y')
 
         # Create tree view
         cols = ('SL.NO.', 'WEBSITE', 'USERNAME', 'PASSWORD')
-        self.password_table = ttk.Treeview(master=top_left_frame, columns=cols, padding=8, show='headings', selectmode='browse',
+        self.password_table = ttk.Treeview(master=top_left_frame, columns=cols, padding=0, show='headings', selectmode='browse',
                                            yscrollcommand=pass_table_scroll.set, height=3)
-        self.password_table.pack(side='top', anchor='n')
+        self.password_table.pack(side='top', anchor='nw')
         self.password_table.column("SL.NO.", width=45, anchor='center')
         self.password_table.column("WEBSITE", anchor='center')
         self.password_table.column("USERNAME", anchor='center')
         self.password_table.column("PASSWORD", anchor='center')
+        self.password_table.update()
 
+        # Configure the canvas
         self.canvas.configure(yscrollcommand=pass_table_scroll.set)
-        l1 = tk.Label(master=self.canvas, text='Make Visible', bg='white')
-        l1.pack(side='top', anchor='n', pady=6)
+        self.password_table.configure(yscrollcommand=pass_table_scroll.set)
+        self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox('all')))
+
+        # Create another frame inside the canvas
+        self.frame_in_canvas = tk.Frame(self.canvas, bg='white')
+        self.canvas.create_window((0, 0), window=self.frame_in_canvas, anchor='nw')
+
+        l1 = tk.Label(master=top_right_label_frame, text='Make Visible', bg='white')  # TODO: Define label in top_right_label frame
+        l1.pack(side='top', anchor='n', pady=1)
+        self.pass_table_win.update()
 
         # Bind the left and right click actions to functions
         self.password_table.bind('<ButtonRelease-1>', self.return_entry_id)
@@ -188,19 +194,23 @@ class UserInterface:
         for col in cols:
             self.password_table.heading(col, text=col)
 
-        # Insert values in to the tree view widget
-        style = ttk.Style(self.pass_table_win)
-        style.configure('Treeview', rowheight=24)
+        # Adjust the row height tree view widget
+        style = ttk.Style(top_left_frame)
+        style.configure('Treeview', rowheight=25)
+
         self.update_password_table()
+        self.pass_table_win.update()
+
+        # Adjust the width and height of the canvas
+        canvasWidth = l1.winfo_width()
+        canvasHeight = self.password_table.winfo_height()
+        self.canvas.configure(width=canvasWidth, height=canvasHeight - top_right_label_frame.winfo_height())
+
+        self.pass_table_win.update()
 
         # Assign alternating colors to rows of the table
         self.password_table.tag_configure('odd_row', background='#cfd1d4')
         self.password_table.tag_configure('even_row', background='white')
-
-        # Configure the scroll bar
-        # pass_table_scroll.configure(command=self.password_table.yview)
-        pass_table_scroll.configure(command=self.view_all)
-        self.pass_table_win.grid()
 
         # Add the buttons
         self.show_pass_btn = tk.Button(master=bottom_frame, text="Show passwords",  width=15, command=self.show_or_hide_passwords)
@@ -241,11 +251,12 @@ class UserInterface:
             else:
                 self.password_table.insert("", "end", iid=str(iid), values=(val[0], val[1], val[2], val[3]), tags=(tags, ))
             tags = 'even_row' if tags == 'odd_row' else 'odd_row'
+            self.pass_table_win.update()
 
             # TODO: Delete if checkboxes doesn't work
             # Insert checkboxes color=
             var = tk.IntVar()
-            ch_box = tk.Checkbutton(master=self.canvas, text="", variable=var, bg=color, command=partial(self.check_box_callback, idx))
+            ch_box = tk.Checkbutton(master=self.frame_in_canvas, text="", height=1, variable=var, bg=color, command=partial(self.check_box_callback, idx))
             ch_box.pack(side='top', fill='x', pady=0)
             self.checkbox_list.append(ch_box)
             self.chk_var_list.append(var)
@@ -333,9 +344,6 @@ class UserInterface:
             messagebox.showinfo("Credentials updated", "Your credentials have been updated")
             self.update_cred_win.destroy()
             self.refresh_password_table()
-            # self.password_table.delete(*self.password_table.get_children())
-            # self.delete_checkboxes()
-            # self.update_password_table()
         else:
             messagebox.showwarning("Credentials update failed", "Your credentials couldn't be updated")
         self.pass_table_win.wait_window()
@@ -351,9 +359,6 @@ class UserInterface:
             if res:
                 messagebox.showinfo("Credential Deleted", "The entry " + ', '.join(entry_to_delete[1:]) + " has been successfully deleted.")
                 self.refresh_password_table()
-                # self.password_table.delete(*self.password_table.get_children())
-                # self.delete_checkboxes()
-                # self.update_password_table()
                 self.pass_table_win.wait_window()
             else:
                 messagebox.showwarning("Credential Delete Failed", "The entry " + ', '.join(entry_to_delete[1:]) + " couldn't be deleted.")
@@ -421,11 +426,6 @@ class UserInterface:
         # ch_box = tk.Checkbutton(master=self.top_right_frame, text="", variable=var, command=partial(self.check_box_callback, len(values)))
         messagebox.showinfo("Added Credentials", "The password has been successfully added to the vault")
         self.refresh_password_table()
-        # self.password_table.delete(*self.password_table.get_children())
-        # self.delete_checkboxes()
-        # self.update_password_table()
-        # self.password_table.delete(*self.password_table.get_children())
-        # self.update_password_table()
         self.pass_table_win.wait_window()
 
 
@@ -433,7 +433,7 @@ class UserInterface:
         lower_case = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
         upper_case = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
         numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-        spl_char = ['!', '"', '§', '$', '%', '&', '/', '(', ')', '=', '?']
+        spl_char = ['!', '§', '$', '%', '&', '/', '(', ')', '=', '?']
 
         # password_length = 14
         num_lower_case = 4
@@ -476,8 +476,6 @@ class UserInterface:
         if ans:
             db.remove_all_values()
             self.refresh_password_table()
-            # self.delete_checkboxes()
-            # self.update_password_table()
         else:
             self.pass_table_win.wait_window()
 
@@ -553,9 +551,11 @@ class UserInterface:
 
         if text == "Show passwords":
             self.update_password_table(mask=False)
+            # TODO: set all intvar to 1 and select all checkboxes
             self.show_pass_btn.configure(text="Hide passwords")
         elif text == "Hide passwords":
             self.update_password_table(mask=True)
+            # TODO: set all intvar to 0 and deselect all checkboxes
             self.show_pass_btn.configure(text="Show passwords")
 
 
